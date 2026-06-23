@@ -58,6 +58,33 @@ These paths are written into generated Pi settings. Vendored resources currently
 
 Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff` extension from the `.#pi-fff` package.
 
+Matt Pocock skills are available from a pinned upstream source via `pi.mattPocockSkills`. The default profile exposes these manual-only skills by patching `disable-model-invocation: true` into their frontmatter:
+
+- `skills/engineering/diagnosing-bugs`
+- `skills/engineering/grill-with-docs`
+- `skills/engineering/codebase-design`
+- `skills/engineering/improve-codebase-architecture`
+- `skills/engineering/domain-modeling`
+- `skills/productivity/teach`
+
+You can choose exactly which skill directories to expose, for example:
+
+```nix
+pi.mattPocockSkills = {
+  enable = true;
+  skills = [
+    "skills/engineering/tdd"
+    "skills/engineering/diagnosing-bugs"
+    "skills/productivity/grilling"
+  ];
+  hiddenSkills = [
+    "skills/engineering/diagnosing-bugs"
+  ];
+};
+```
+
+`hiddenSkills` patches the packaged `SKILL.md` frontmatter with `disable-model-invocation: true`, so those skills stay available as `/skill:...` commands without being advertised for automatic model invocation.
+
 Herdr's Pi integration is also loaded declaratively by default from a pinned
 Herdr source checkout. It reports Pi session and agent state to Herdr when Pi is
 running inside Herdr, and stays inactive elsewhere. Disable with:

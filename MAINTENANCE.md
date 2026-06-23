@@ -74,6 +74,49 @@ nix build .#pi --allow-import-from-derivation
 
 Optional sanity check: inspect generated settings and confirm `extensions` contains the Herdr store path ending in `src/integration/assets/pi/herdr-agent-state.ts`.
 
+### Matt Pocock skills source
+
+`module.nix` exposes a pinned snapshot of <https://github.com/mattpocock/skills> through `pi.mattPocockSkills.source`. Individual skills are opt-in via `pi.mattPocockSkills.skills`.
+
+The default profile exposes selected skills from that pinned source and patches one frontmatter field during packaging:
+
+- `skills/engineering/diagnosing-bugs`
+- `skills/engineering/grill-with-docs`
+- `skills/engineering/codebase-design`
+- `skills/engineering/improve-codebase-architecture`
+- `skills/engineering/domain-modeling`
+- `skills/productivity/teach`
+
+- `disable-model-invocation: true`
+
+That keeps it available as a manual skill command without including it in the model-visible skill inventory.
+
+Update steps:
+
+```bash
+rev=$(git ls-remote https://github.com/mattpocock/skills HEAD | awk '{print $1}')
+nix-prefetch-url --unpack "https://github.com/mattpocock/skills/archive/$rev.tar.gz"
+```
+
+Convert the printed base32 hash to SRI format:
+
+```bash
+nix hash convert --hash-algo sha256 --to sri <base32-hash>
+```
+
+Then update `rev` and `hash` in `module.nix`. You normally do not need code changes when adjusting which skills are exposed; configure that in your wrapper/module config via:
+
+- `pi.mattPocockSkills.skills`
+- `pi.mattPocockSkills.hiddenSkills`
+
+Afterwards run:
+
+```bash
+nix fmt
+nix flake show --allow-import-from-derivation
+nix build .#pi --allow-import-from-derivation
+```
+
 ## Explore extension model fallbacks
 
 `extensions/explore.ts` contains a hardcoded default model fallback list for the

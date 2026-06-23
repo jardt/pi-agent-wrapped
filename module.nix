@@ -17,6 +17,34 @@ let
   agentTools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
   piResources = pkgs.callPackage ./packages/pi-resources.nix { };
   fffPackage = pkgs.callPackage ./packages/pi-packages/fff.nix { };
+  mattPocockSkillsPackage = pkgs.runCommand "pi-package-mattpocock-skills" { } ''
+    set -euo pipefail
+
+    base="$out/share/pi-packages/mattpocock-skills"
+    mkdir -p "$base"
+
+    ${lib.concatMapStringsSep "\n" (
+      skill: ''
+        src_path="${config.pi.mattPocockSkills.source}/${skill}"
+        dst_path="$base/${skill}"
+        mkdir -p "$(dirname "$dst_path")"
+        cp -R "$src_path" "$dst_path"
+
+        ${lib.optionalString (config.pi.mattPocockSkills.hiddenSkills != [ ]) ''
+          case "${skill}" in
+            ${lib.concatMapStringsSep "\n            " (skill: ''
+              "${skill}")
+                skill_md="$dst_path/SKILL.md"
+                if ! grep -q '^disable-model-invocation:' "$skill_md"; then
+                  sed -i '/^description:/a disable-model-invocation: true' "$skill_md"
+                fi
+                ;;
+            '') config.pi.mattPocockSkills.hiddenSkills}
+          esac
+        ''}
+      ''
+    ) config.pi.mattPocockSkills.skills}
+  '';
   piResourcePackageType = lib.types.submodule {
     options = {
       package = lib.mkOption {
@@ -51,6 +79,10 @@ let
   };
   resourcePackageResources = name: lib.concatMap (pkg: pkg.${name}) config.pi.resourcePackages;
   herdrPiExtension = "${config.pi.herdrIntegration.source}/src/integration/assets/pi/herdr-agent-state.ts";
+  mattPocockResourcePackage = lib.optional config.pi.mattPocockSkills.enable {
+    package = mattPocockSkillsPackage;
+    skills = map (skill: "${mattPocockSkillsPackage}/share/pi-packages/mattpocock-skills/${skill}") config.pi.mattPocockSkills.skills;
+  };
 in
 {
   imports = [ wlib.modules.default ];
@@ -81,8 +113,58 @@ in
           package = fffPackage;
           extensions = [ "${fffPackage}/share/pi-packages/fff/src/index.ts" ];
         }
-      ];
+      ] ++ mattPocockResourcePackage;
       description = "Nix-built Pi packages exposed as generated settings resources.";
+    };
+
+    mattPocockSkills = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = true;
+        description = "Whether to expose selected Matt Pocock skills from a pinned upstream snapshot.";
+      };
+
+      source = lib.mkOption {
+        type = lib.types.package;
+        default = pkgs.fetchFromGitHub {
+          owner = "mattpocock";
+          repo = "skills";
+          rev = "6eeb81b5fcfeeb5bd531dd47ab2f9f2bbea27461";
+          hash = "sha256-6T0KwZcUIIbd6kpkQXPCnnJPVY2mEjxYjed4FjKnRAw=";
+        };
+        description = "Pinned Matt Pocock skills source checkout.";
+      };
+
+      skills = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "skills/engineering/diagnosing-bugs"
+          "skills/engineering/grill-with-docs"
+          "skills/engineering/codebase-design"
+          "skills/engineering/improve-codebase-architecture"
+          "skills/engineering/domain-modeling"
+          "skills/productivity/teach"
+        ];
+        example = [
+          "skills/engineering/tdd"
+          "skills/engineering/diagnosing-bugs"
+        ];
+        description = "Relative skill directories under the Matt Pocock skills source to expose to Pi.";
+      };
+
+      hiddenSkills = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          "skills/engineering/diagnosing-bugs"
+          "skills/engineering/grill-with-docs"
+          "skills/engineering/codebase-design"
+          "skills/engineering/improve-codebase-architecture"
+          "skills/engineering/domain-modeling"
+          "skills/productivity/teach"
+        ];
+        example = [ "skills/engineering/diagnosing-bugs" ];
+        description = "Subset of `pi.mattPocockSkills.skills` whose `SKILL.md` frontmatter should be patched with `disable-model-invocation: true`.";
+      };
     };
 
     settings = lib.mkOption {
