@@ -52,8 +52,8 @@ Repo-managed resources live in:
 
 These paths are written into generated Pi settings. Vendored resources currently include:
 
-- extensions: `split-fork`, `todos`, `multi-edit`, `context`, `clanker-working-messages`
-- skills: `librarian`, `tmux`, `commit`, `github`
+- extensions: `split-fork`, `todos`, `multi-edit`, `context`, `clanker-working-messages`, `explore`
+- skills: `librarian`, `tmux`, `herdr`, `commit`, `github`
 - themes: `gruvbox-dark-hard`
 
 Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff` extension from the `.#pi-fff` package.

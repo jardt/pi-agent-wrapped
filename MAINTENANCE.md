@@ -73,3 +73,14 @@ nix build .#pi --allow-import-from-derivation
 ```
 
 Optional sanity check: inspect generated settings and confirm `extensions` contains the Herdr store path ending in `src/integration/assets/pi/herdr-agent-state.ts`.
+
+## Explore extension model fallbacks
+
+`extensions/explore.ts` contains a hardcoded default model fallback list for the
+read-only scout subagent. Keep it in sync with Pi's available built-in models
+and preferred cheap models across providers.
+
+Current defaults prefer OpenAI Codex first, then GitHub Copilot, with Claude
+Haiku as an early cheap fallback. If any of these model ids change upstream,
+update `PI_EXPLORE_MODEL` / `PI_EXPLORE_FALLBACK_MODELS` defaults in
+`extensions/explore.ts` and rebuild `.#pi-resources`.
