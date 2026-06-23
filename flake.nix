@@ -43,6 +43,7 @@
         in
         rec {
           pi-agent-tools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
+          pi-resources = pkgs.callPackage ./packages/pi-resources.nix { };
           pi-fff = pkgs.callPackage ./packages/pi-packages/fff.nix { };
           pi = self.wrappers.pi.wrap { inherit pkgs; };
           default = pi;
@@ -81,6 +82,7 @@
             packages = [
               self.packages.${system}.pi
               self.packages.${system}.pi-agent-tools
+              self.packages.${system}.pi-resources
             ];
           };
         }
@@ -95,7 +97,7 @@
           name = "fmt";
           runtimeInputs = [ pkgs.nixfmt ];
           text = ''
-            nixfmt flake.nix module.nix packages/pi-agent-tools.nix packages/pi-packages/fff.nix "$@"
+            nixfmt flake.nix module.nix packages/pi-agent-tools.nix packages/pi-resources.nix packages/pi-packages/fff.nix "$@"
           '';
         }
       );

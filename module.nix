@@ -15,6 +15,7 @@ let
     extensions = ./extensions;
   };
   agentTools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
+  piResources = pkgs.callPackage ./packages/pi-resources.nix { };
   fffPackage = pkgs.callPackage ./packages/pi-packages/fff.nix { };
   piResourcePackageType = lib.types.submodule {
     options = {
@@ -127,12 +128,13 @@ in
         {
           defaultProjectTrust = "ask";
           enableInstallTelemetry = false;
+          theme = "gruvbox-dark-hard";
           packages = config.pi.packages;
           skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
           prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
           themes = [ resourceDirs.themes ] ++ resourcePackageResources "themes";
           extensions = [
-            resourceDirs.extensions
+            "${piResources}/share/pi-resources/extensions"
           ]
           ++ resourcePackageResources "extensions"
           ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
@@ -145,6 +147,7 @@ in
       ''
         profile_dir="${config.pi.stateRoot}/${config.pi.profileName}"
         mkdir -p "$profile_dir" "$profile_dir/packages" "$profile_dir/sessions"
+        ln -sfn ${config.package}/lib/node_modules/@earendil-works/pi-coding-agent/dist "$profile_dir/packages/dist"
         rm -f "$profile_dir/settings.json"
         cp ${config.constructFiles.generatedSettings.path} "$profile_dir/settings.json"
         export PI_CODING_AGENT_DIR="$profile_dir"
