@@ -29,6 +29,7 @@ let
         dst_path="$base/${skill}"
         mkdir -p "$(dirname "$dst_path")"
         cp -R "$src_path" "$dst_path"
+        chmod -R u+w "$dst_path"
 
         ${lib.optionalString (config.pi.mattPocockSkills.hiddenSkills != [ ]) ''
           case "${skill}" in
@@ -164,6 +165,15 @@ in
         ];
         example = [ "skills/engineering/diagnosing-bugs" ];
         description = "Subset of `pi.mattPocockSkills.skills` whose `SKILL.md` frontmatter should be patched with `disable-model-invocation: true`.";
+        apply =
+          hiddenSkills:
+          let
+            extras = lib.subtractLists config.pi.mattPocockSkills.skills hiddenSkills;
+          in
+          if extras == [ ] then
+            hiddenSkills
+          else
+            throw "pi.mattPocockSkills.hiddenSkills must be a subset of pi.mattPocockSkills.skills. Extra entries: ${lib.concatStringsSep ", " extras}";
       };
     };
 
