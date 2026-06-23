@@ -91,6 +91,33 @@ in
       description = "Extra declarative Pi settings merged into generated settings.json.";
     };
 
+    keybindings = lib.mkOption {
+      type = jsonFmtType;
+      default = {
+        "tui.editor.cursorUp" = [
+          "up"
+          "ctrl+p"
+        ];
+        "tui.editor.cursorDown" = [
+          "down"
+          "ctrl+n"
+        ];
+        "tui.select.up" = [
+          "up"
+          "ctrl+p"
+        ];
+        "tui.select.down" = [
+          "down"
+          "ctrl+n"
+        ];
+        "app.model.cycleForward" = [ ];
+        "app.session.togglePath" = [ ];
+        "app.models.toggleProvider" = [ ];
+        "app.session.toggleNamedFilter" = "ctrl+shift+n";
+      };
+      description = "Declarative Pi keybindings written to generated keybindings.json.";
+    };
+
     herdrIntegration = {
       enable = lib.mkOption {
         type = lib.types.bool;
@@ -127,8 +154,19 @@ in
       content = builtins.toJSON (
         {
           defaultProjectTrust = "ask";
+          defaultModel = "gpt-5.5";
+          defaultThinkingLevel = "low";
           enableInstallTelemetry = false;
           theme = "gruvbox-dark-hard";
+          enabledModels = [
+            "openai-codex/gpt-5.4"
+            "openai-codex/gpt-5.4-mini"
+            "openai-codex/gpt-5.5"
+          ];
+          compaction = {
+            enabled = true;
+          };
+          hideThinkingBlock = false;
           packages = config.pi.packages;
           skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
           prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
@@ -143,12 +181,19 @@ in
       );
     };
 
+    constructFiles.generatedKeybindings = {
+      relPath = "share/pi-wrapped/keybindings.json";
+      content = builtins.toJSON config.pi.keybindings;
+    };
+
     runShell = [
       ''
         profile_dir="${config.pi.stateRoot}/${config.pi.profileName}"
         mkdir -p "$profile_dir" "$profile_dir/sessions"
         rm -f "$profile_dir/settings.json"
         cp ${config.constructFiles.generatedSettings.path} "$profile_dir/settings.json"
+        rm -f "$profile_dir/keybindings.json"
+        cp ${config.constructFiles.generatedKeybindings.path} "$profile_dir/keybindings.json"
         export PI_CODING_AGENT_DIR="$profile_dir"
         export PI_PACKAGE_DIR="${config.package}/lib/node_modules/@earendil-works/pi-coding-agent"
         export PI_CODING_AGENT_SESSION_DIR="$profile_dir/sessions"

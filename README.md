@@ -26,7 +26,12 @@ The wrapper executable is named `p`. It sets:
 - `PI_SKIP_VERSION_CHECK=1`
 - `PI_TELEMETRY=0`
 
-`settings.json` is generated declaratively and overwritten on every launch.
+`settings.json` and `keybindings.json` are generated declaratively and
+overwritten on every launch.
+
+Default keybindings add Emacs-style `ctrl+p`/`ctrl+n` movement for the editor
+and selectors, unbind conflicting model/session/provider actions, and move the
+named-session filter toggle to `ctrl+shift+n`.
 
 ## Packages
 
