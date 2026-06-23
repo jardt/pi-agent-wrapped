@@ -52,7 +52,30 @@ Repo-managed resources live in:
 
 These paths are written into generated Pi settings. Vendored resources currently include:
 
-- extensions: `split-fork`, `todos`, `multi-edit`, `context`, `clanker-working-messages`, `explore`
+- extensions: `split-fork`, `todos`, `multi-edit`, `context`, `clanker-working-messages`, `explore`, `tree-summary-model`
+
+`explore` and `tree-summary-model` now share cheap-model selection. Set:
+
+- `PI_CHEAP_MODEL` for the primary cheap model
+- `PI_CHEAP_FALLBACK_MODELS` for a comma-separated fallback list
+
+Or configure them declaratively:
+
+```nix
+pi.cheapModels = {
+  primary = "openai-codex/gpt-5.4-mini";
+  fallbacks = [
+    "github-copilot/gpt-5.4-mini"
+    "anthropic/claude-haiku-4-5"
+  ];
+};
+```
+
+Feature-specific overrides still work:
+
+- `PI_EXPLORE_MODEL`, `PI_EXPLORE_FALLBACK_MODELS`
+- `PI_TREE_SUMMARY_MODEL`, `PI_TREE_SUMMARY_FALLBACK_MODELS`
+- `PI_COMPACTION_MODEL`, `PI_COMPACTION_FALLBACK_MODELS`
 - skills: `librarian`, `tmux`, `herdr`, `commit`, `github`
 - themes: `gruvbox-dark-hard`
 

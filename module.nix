@@ -228,6 +228,25 @@ in
         description = "Pinned Herdr source containing the Pi integration extension.";
       };
     };
+
+    cheapModels = {
+      primary = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        example = "openai-codex/gpt-5.4-mini";
+        description = "Primary cheap model exported as `PI_CHEAP_MODEL` for shared explore/tree/compaction model selection.";
+      };
+
+      fallbacks = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [ ];
+        example = [
+          "github-copilot/gpt-5.4-mini"
+          "anthropic/claude-haiku-4-5"
+        ];
+        description = "Fallback cheap models exported as `PI_CHEAP_FALLBACK_MODELS` for shared explore/tree/compaction model selection.";
+      };
+    };
   };
 
   config = {
@@ -237,6 +256,12 @@ in
     envDefault = {
       PI_SKIP_VERSION_CHECK = "1";
       PI_TELEMETRY = "0";
+    }
+    // lib.optionalAttrs (config.pi.cheapModels.primary != null) {
+      PI_CHEAP_MODEL = config.pi.cheapModels.primary;
+    }
+    // lib.optionalAttrs (config.pi.cheapModels.fallbacks != [ ]) {
+      PI_CHEAP_FALLBACK_MODELS = lib.concatStringsSep "," config.pi.cheapModels.fallbacks;
     };
 
     runtimePkgs = [ agentTools ];

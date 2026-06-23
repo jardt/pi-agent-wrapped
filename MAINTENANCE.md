@@ -117,13 +117,21 @@ nix flake show --allow-import-from-derivation
 nix build .#pi --allow-import-from-derivation
 ```
 
-## Explore extension model fallbacks
+## Cheap model fallbacks
 
-`extensions/explore.ts` contains a hardcoded default model fallback list for the
-read-only scout subagent. Keep it in sync with Pi's available built-in models
-and preferred cheap models across providers.
+`extensions/model-selection.ts` contains the shared default cheap-model fallback
+list used by:
+
+- `extensions/explore.ts`
+- `extensions/tree-summary-model.ts` for `/tree` summaries
+- `extensions/tree-summary-model.ts` for session compaction
 
 Current defaults prefer OpenAI Codex first, then GitHub Copilot, with Claude
 Haiku as an early cheap fallback. If any of these model ids change upstream,
-update `PI_EXPLORE_MODEL` / `PI_EXPLORE_FALLBACK_MODELS` defaults in
-`extensions/explore.ts` and rebuild `.#pi-resources`.
+update the defaults in `extensions/model-selection.ts` and rebuild
+`.#pi-resources`.
+
+Wrapper users can also set shared cheap-model env vars declaratively through:
+
+- `pi.cheapModels.primary`
+- `pi.cheapModels.fallbacks`

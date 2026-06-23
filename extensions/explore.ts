@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { cheapModelArgs } from "./model-selection";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const DONE_EXTENSION = join(MODULE_DIR, "explore-helper", "done.ts");
@@ -187,17 +188,8 @@ function artifactDir(ctx: ExtensionContext): string {
   return dir;
 }
 
-function normalizeModelArg(raw: string): string {
-  return raw.includes(":") ? raw : `${raw}:medium`;
-}
-
 function modelArgs(): string[] {
-  const main = process.env.PI_EXPLORE_MODEL ?? "openai-codex/gpt-5.4-mini";
-  const fallbacks = (process.env.PI_EXPLORE_FALLBACK_MODELS ?? "github-copilot/gpt-5.4-mini,anthropic/claude-haiku-4-5,openai-codex/gpt-5.4,github-copilot/gpt-5.4,openai-codex/gpt-5.5,github-copilot/gpt-5.5")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-  return [...new Set([main, ...fallbacks].map(normalizeModelArg))];
+  return cheapModelArgs("PI_EXPLORE_MODEL", "PI_EXPLORE_FALLBACK_MODELS");
 }
 
 function agentCommand(): string {
