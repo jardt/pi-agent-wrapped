@@ -151,6 +151,7 @@ function createHerdrRightSplit(cwd: string): ForkPane {
 		"right",
 		"--cwd",
 		cwd,
+		"--focus",
 	], { encoding: "utf8" });
 	const response = JSON.parse(output);
 	const pane = response?.result?.pane?.pane_id ?? findPaneId(response?.result?.pane);
@@ -180,6 +181,7 @@ function sendCommand(pane: ForkPane, command: string): void {
 	}
 	execFileSync("tmux", ["send-keys", "-t", pane.id, "-l", command], { encoding: "utf8" });
 	execFileSync("tmux", ["send-keys", "-t", pane.id, "Enter"], { encoding: "utf8" });
+	execFileSync("tmux", ["select-pane", "-t", pane.id], { encoding: "utf8" });
 }
 
 export default function (pi: ExtensionAPI): void {
