@@ -5,10 +5,18 @@ Declarative Pi coding-agent setup packaged with `nix-wrapper-modules`.
 ## Run
 
 ```bash
-nix run .#pi
+nix run .#p
 ```
 
 The default app exposes a `p` binary.
+
+Available flake outputs:
+
+- `.#p`: minimal wrapper package exposing only `bin/p`
+- `.#pi-wrapped`: full wrapped Pi package
+
+Use `.#p` when you want the wrapped launcher without colliding with another Pi
+package that already provides `bin/pi`.
 
 ## State
 

@@ -45,17 +45,20 @@
           pi-agent-tools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
           pi-resources = pkgs.callPackage ./packages/pi-resources.nix { };
           pi-fff = pkgs.callPackage ./packages/pi-packages/fff.nix { };
-          pi = self.wrappers.pi.wrap { inherit pkgs; };
-          default = pi;
+          pi-wrapped = self.wrappers.pi.wrap { inherit pkgs; };
+          p = pkgs.runCommand "pi-wrapped-p-only" { } ''
+            mkdir -p $out/bin
+            ln -s ${pi-wrapped}/bin/p $out/bin/p
+          '';
+          default = p;
         }
       );
 
       apps = forEachSystem (system: rec {
         p = {
           type = "app";
-          program = "${self.packages.${system}.pi}/bin/p";
+          program = "${self.packages.${system}.p}/bin/p";
         };
-        pi = p;
         default = p;
       });
 
@@ -81,7 +84,7 @@
           default = pkgs.mkShell {
             name = "pi-wrapped-module";
             packages = [
-              self.packages.${system}.pi
+              self.packages.${system}.p
               self.packages.${system}.pi-agent-tools
               self.packages.${system}.pi-resources
             ];

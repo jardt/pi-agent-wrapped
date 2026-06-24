@@ -27,7 +27,7 @@ Nix will print each expected hash. Replace the fake hashes, then run:
 
 ```bash
 nix fmt
-nix build .#pi .#pi-fff --allow-import-from-derivation
+nix build .#p .#pi-fff --allow-import-from-derivation
 ```
 
 Sanity checks:
@@ -69,7 +69,7 @@ Then update `rev` and `hash` in `module.nix`, run:
 ```bash
 nix fmt
 nix flake show --allow-import-from-derivation
-nix build .#pi --allow-import-from-derivation
+nix build .#p --allow-import-from-derivation
 ```
 
 Optional sanity check: inspect generated settings and confirm `extensions` contains the Herdr store path ending in `src/integration/assets/pi/herdr-agent-state.ts`.
