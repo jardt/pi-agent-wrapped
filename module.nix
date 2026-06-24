@@ -303,6 +303,40 @@ in
       content = builtins.toJSON config.pi.keybindings;
     };
 
+    constructFiles.generatedAgents = {
+      relPath = "share/pi-wrapped/AGENTS.md";
+      content = ''
+        # Agent instructions
+
+        ## Pi launcher invariants
+
+        `PI_LAUNCHER_BIN` is the authoritative identity of the currently active Pi wrapper.
+
+        When spawning a new Pi process:
+        - always use `PI_LAUNCHER_BIN` or `run-current-pi`
+        - never invoke `pi`, `p`, `p-minimal`, `p-sandboxed`, or any other launcher name directly
+        - if `PI_LAUNCHER_BIN` is unset, fail instead of guessing
+
+        This applies to:
+        - extensions
+        - shell scripts
+        - Herdr/tmux/Ghostty spawned processes
+        - ad hoc agent actions requested in chat
+
+        ## Manual and agent spawning
+
+        Prefer `run-current-pi` for manual or ad hoc agent-driven Pi spawns. It validates `PI_LAUNCHER_BIN` and execs the exact active wrapper.
+
+        Examples:
+
+        ```sh
+        run-current-pi
+        run-current-pi --session /path/to/session.jsonl
+        herdr pane run "$PANE" "run-current-pi --session '/path/to/session.jsonl'"
+        ```
+      '';
+    };
+
     runShell = [
       ''
         profile_dir="${config.pi.stateRoot}/${config.pi.profileName}"
@@ -311,6 +345,13 @@ in
         cp ${config.constructFiles.generatedSettings.path} "$profile_dir/settings.json"
         rm -f "$profile_dir/keybindings.json"
         cp ${config.constructFiles.generatedKeybindings.path} "$profile_dir/keybindings.json"
+        rm -f "$profile_dir/AGENTS.md"
+        cp ${config.constructFiles.generatedAgents.path} "$profile_dir/AGENTS.md"
+        case "$0" in
+          */*) launcher_bin="$0" ;;
+          *) launcher_bin="$(command -v -- "$0" 2>/dev/null || printf '%s' "$0")" ;;
+        esac
+        export PI_LAUNCHER_BIN="$launcher_bin"
         export PI_CODING_AGENT_DIR="$profile_dir"
         export PI_PACKAGE_DIR="${config.package}/lib/node_modules/@earendil-works/pi-coding-agent"
         export PI_CODING_AGENT_SESSION_DIR="$profile_dir/sessions"

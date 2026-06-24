@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${PI_LAUNCHER_BIN:?PI_LAUNCHER_BIN is required; spawned Pi processes must reuse the active wrapper}"
+
+exec "$PI_LAUNCHER_BIN" "$@"

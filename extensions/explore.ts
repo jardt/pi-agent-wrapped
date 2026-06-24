@@ -6,6 +6,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getPiInvocationParts } from "./lib/launcher";
 import { cheapModelArgs } from "./lib/model-selection";
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
@@ -193,7 +194,7 @@ function modelArgs(): string[] {
 }
 
 function agentCommand(): string {
-  return process.env.PI_EXPLORE_COMMAND ?? "p";
+  return process.env.PI_EXPLORE_COMMAND ?? getPiInvocationParts().map(shellEscape).join(" ");
 }
 
 function buildTask(task: string): string {

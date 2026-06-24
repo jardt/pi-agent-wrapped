@@ -1,8 +1,9 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { existsSync, promises as fs } from "node:fs";
+import { promises as fs } from "node:fs";
 import * as path from "node:path";
+import { getPiInvocationParts } from "./lib/launcher";
 
 const GHOSTTY_SPLIT_SCRIPT = `on run argv
 	set targetCwd to item 1 of argv
@@ -36,21 +37,6 @@ interface ForkPane {
 function shellQuote(value: string): string {
 	if (value.length === 0) return "''";
 	return `'${value.replace(/'/g, `"'"'`)}'`;
-}
-
-function getPiInvocationParts(): string[] {
-	const currentScript = process.argv[1];
-	if (currentScript && existsSync(currentScript)) {
-		return [process.execPath, currentScript];
-	}
-
-	const execName = path.basename(process.execPath).toLowerCase();
-	const isGenericRuntime = /^(node|bun)(\.exe)?$/.test(execName);
-	if (!isGenericRuntime) {
-		return [process.execPath];
-	}
-
-	return ["pi"];
 }
 
 function buildPiStartupCommand(sessionFile: string | undefined, prompt: string): string {
