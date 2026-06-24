@@ -107,6 +107,13 @@ in
       description = "Declarative Pi packages written to generated settings.json for Pi's package loader.";
     };
 
+    defaultModel = lib.mkOption {
+      type = lib.types.str;
+      default = "gpt-5.5";
+      example = "openai-codex/gpt-5.4";
+      description = "Default Pi model written to generated settings.json as `defaultModel`.";
+    };
+
     resourcePackages = lib.mkOption {
       type = lib.types.listOf piResourcePackageType;
       default = [
@@ -247,6 +254,24 @@ in
         description = "Fallback cheap models exported as `PI_CHEAP_FALLBACK_MODELS` for shared explore/tree/compaction model selection.";
       };
     };
+
+    appendSystemPrompt = lib.mkOption {
+      type = lib.types.lines;
+      default = ''
+        # Response style
+
+        Default voice: terse, precise, robot-like.
+
+        - Lead with answer. No pleasantries, filler, hedging, or performative enthusiasm.
+        - Prefer compact technical statements. Fragments OK when unambiguous.
+        - Keep exact technical terms, paths, commands, errors, and code unchanged.
+        - Use arrows for causality when concise: `X -> Y`.
+        - Add detail only when it improves correctness, safety, or next action clarity.
+        - For destructive, security-sensitive, or multi-step instructions, use clear full sentences.
+        - If user asks for normal/plain/expanded wording, follow that request.
+      '';
+      description = "Markdown written to the profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR`.";
+    };
   };
 
   config = {
@@ -271,7 +296,7 @@ in
       content = builtins.toJSON (
         {
           defaultProjectTrust = "ask";
-          defaultModel = "gpt-5.5";
+          defaultModel = config.pi.defaultModel;
           defaultThinkingLevel = "low";
           enableInstallTelemetry = false;
           theme = "gruvbox-dark-hard";
@@ -337,6 +362,11 @@ in
       '';
     };
 
+    constructFiles.generatedAppendSystemPrompt = {
+      relPath = "share/pi-wrapped/APPEND_SYSTEM.md";
+      content = config.pi.appendSystemPrompt;
+    };
+
     runShell = [
       ''
         profile_dir="${config.pi.stateRoot}/${config.pi.profileName}"
@@ -347,6 +377,8 @@ in
         cp ${config.constructFiles.generatedKeybindings.path} "$profile_dir/keybindings.json"
         rm -f "$profile_dir/AGENTS.md"
         cp ${config.constructFiles.generatedAgents.path} "$profile_dir/AGENTS.md"
+        rm -f "$profile_dir/APPEND_SYSTEM.md"
+        cp ${config.constructFiles.generatedAppendSystemPrompt.path} "$profile_dir/APPEND_SYSTEM.md"
         case "$0" in
           */*) launcher_bin="$0" ;;
           *) launcher_bin="$(command -v -- "$0" 2>/dev/null || printf '%s' "$0")" ;;

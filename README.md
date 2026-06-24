@@ -37,8 +37,16 @@ The wrapper executable is named `p`. It sets:
 
 Each profile also gets its own generated `AGENTS.md` inside `PI_CODING_AGENT_DIR`, so profile-specific agent instructions follow the active wrapped launcher.
 
+Each profile also gets a generated `APPEND_SYSTEM.md` inside `PI_CODING_AGENT_DIR` to append wrapper-specific response-style instructions without replacing Pi's default system prompt.
+
 `settings.json` and `keybindings.json` are generated declaratively and
 overwritten on every launch.
+
+Consumers can also set these module options directly instead of overriding raw
+settings content:
+
+- `pi.defaultModel` -> generated `settings.json` `defaultModel`
+- `pi.appendSystemPrompt` -> profile-local `APPEND_SYSTEM.md`
 
 Default keybindings add Emacs-style `ctrl+p`/`ctrl+n` movement for the editor
 and selectors, unbind conflicting model/session/provider actions, and move the
