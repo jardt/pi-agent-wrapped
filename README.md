@@ -46,12 +46,19 @@ Consumers can also set these module options directly instead of overriding raw
 settings content:
 
 - `pi.defaultModel` -> generated `settings.json` `defaultModel`
+- `pi.theme` -> generated `settings.json` `theme`
 - `pi.appendSystemPrompt` -> extra Markdown appended after the wrapper default in profile-local `APPEND_SYSTEM.md`
 - `pi.overrideSystemPrompt` -> replace profile-local `APPEND_SYSTEM.md` entirely
 - `pi.splash.logoText` -> normal launch splash logo text
 - `pi.splash.versionText` -> version suffix after the logo; set to `null` to hide
 - `pi.splash.compactHelpText` -> compact normal launch splash help text
 - `pi.splash.helpText` -> normal launch splash help text
+
+Example theme override:
+
+```nix
+pi.theme = "gruvbox-dark-hard";
+```
 
 Example append:
 

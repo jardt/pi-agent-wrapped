@@ -143,6 +143,13 @@ in
       description = "Default Pi model written to generated settings.json as `defaultModel`.";
     };
 
+    theme = lib.mkOption {
+      type = lib.types.str;
+      default = "gruvbox-dark-hard";
+      example = "gruvbox-dark-hard";
+      description = "Default Pi theme written to generated settings.json as `theme`.";
+    };
+
     resourcePackages = lib.mkOption {
       type = lib.types.listOf piResourcePackageType;
       default = [
@@ -418,7 +425,7 @@ in
           defaultModel = config.pi.defaultModel;
           defaultThinkingLevel = "low";
           enableInstallTelemetry = false;
-          theme = "gruvbox-dark-hard";
+          theme = config.pi.theme;
           enabledModels = [
             "openai-codex/gpt-5.4"
             "openai-codex/gpt-5.4-mini"
