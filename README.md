@@ -48,6 +48,10 @@ settings content:
 - `pi.defaultModel` -> generated `settings.json` `defaultModel`
 - `pi.appendSystemPrompt` -> extra Markdown appended after the wrapper default in profile-local `APPEND_SYSTEM.md`
 - `pi.overrideSystemPrompt` -> replace profile-local `APPEND_SYSTEM.md` entirely
+- `pi.splash.logoText` -> normal launch splash logo text
+- `pi.splash.versionText` -> version suffix after the logo; set to `null` to hide
+- `pi.splash.compactHelpText` -> compact normal launch splash help text
+- `pi.splash.helpText` -> normal launch splash help text
 
 Example append:
 
@@ -67,6 +71,24 @@ pi.overrideSystemPrompt = ''
 
   Answer in one sentence unless asked otherwise.
 '';
+```
+
+Example splash override:
+
+```nix
+pi.splash = {
+  logoText = ''
+    ██████╗ ██╗
+    ██╔══██╗██║
+    ██████╔╝██║
+    ██╔═══╝ ██║
+    ██║     ██║
+    ╚═╝     ╚═╝
+  '';
+  versionText = null;
+  compactHelpText = "Press {expandKey} for help.";
+  helpText = "Pi profile. Wrapped launcher only.";
+};
 ```
 
 Default keybindings add Emacs-style `ctrl+p`/`ctrl+n` movement for the editor

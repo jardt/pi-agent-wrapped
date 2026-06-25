@@ -42,6 +42,10 @@ let
     - For destructive, security-sensitive, or multi-step instructions, use clear full sentences.
     - If user asks for normal/plain/expanded wording, follow that request.
   '';
+  splashLogoTextJson = builtins.toJSON config.pi.splash.logoText;
+  splashVersionTextJson = builtins.toJSON config.pi.splash.versionText;
+  splashCompactHelpTextJson = builtins.toJSON config.pi.splash.compactHelpText;
+  splashHelpTextJson = builtins.toJSON config.pi.splash.helpText;
   mattPocockSkillsPackage = pkgs.runCommand "pi-package-mattpocock-skills" { } ''
     set -euo pipefail
 
@@ -312,6 +316,39 @@ in
       default = null;
       description = "When set, replaces the entire profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR` instead of using the wrapper default plus `pi.appendSystemPrompt`.";
     };
+
+    splash = {
+      logoText = lib.mkOption {
+        type = lib.types.str;
+        default = ''
+          ██████╗ ██╗
+          ██╔══██╗██║
+          ██████╔╝██║
+          ██╔═══╝ ██║
+          ██║     ██║
+          ╚═╝     ╚═╝
+        '';
+        description = "Logo text used in Pi's normal launch splash header.";
+      };
+
+      versionText = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = " v{version}";
+        description = "Version suffix used after `pi.splash.logoText`. Set to null to hide it. `{version}` is replaced with Pi's runtime version.";
+      };
+
+      compactHelpText = lib.mkOption {
+        type = lib.types.str;
+        default = "Press {expandKey} to show full startup help and loaded resources.";
+        description = "Compact normal launch splash help text. `{expandKey}` is replaced with the configured expand-tools key.";
+      };
+
+      helpText = lib.mkOption {
+        type = lib.types.str;
+        default = "Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.";
+        description = "Normal launch splash help text shown below the startup key hints.";
+      };
+    };
   };
 
   config = {
@@ -360,6 +397,17 @@ in
 
     drv.postBuild = ''
       rm -f "$out/bin/pi" "$out/bin/.pi-wrapped"
+
+      interactive_mode="$out/lib/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/interactive-mode.js"
+      if [ -f "$interactive_mode" ]; then
+        splash_logo_text=${lib.escapeShellArg splashLogoTextJson}
+        splash_version_text=${lib.escapeShellArg splashVersionTextJson}
+        splash_compact_help_text=${lib.escapeShellArg splashCompactHelpTextJson}
+        splash_help_text=${lib.escapeShellArg splashHelpTextJson}
+        SPLASH_LOGO_TEXT="$splash_logo_text" SPLASH_VERSION_TEXT="$splash_version_text" ${pkgs.perl}/bin/perl -0pi -e 's/const logo = theme\.bold\(theme\.fg\("accent", APP_NAME\)\) \+ theme\.fg\("dim", ` v\$\{this\.version\}`\);/const logo = theme.bold(theme.fg("accent", $ENV{SPLASH_LOGO_TEXT})) + ($ENV{SPLASH_VERSION_TEXT} === "null" ? "" : theme.fg("dim", $ENV{SPLASH_VERSION_TEXT}.replace("{version}", this.version)));/' "$interactive_mode"
+        SPLASH_COMPACT_HELP_TEXT="$splash_compact_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const compactOnboarding = theme\.fg\("dim", `Press \$\{keyText\("app\.tools\.expand"\)\} to show full startup help and loaded resources\.`\);/const compactOnboarding = theme.fg("dim", $ENV{SPLASH_COMPACT_HELP_TEXT}.replace("{expandKey}", keyText("app.tools.expand")));/' "$interactive_mode"
+        SPLASH_HELP_TEXT="$splash_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const onboarding = theme\.fg\("dim", `Pi can explain its own features and look up its docs\. Ask it how to use or extend Pi\.`\);/const onboarding = theme.fg("dim", $ENV{SPLASH_HELP_TEXT});/' "$interactive_mode"
+      fi
     '';
 
     constructFiles.generatedSettings = {
