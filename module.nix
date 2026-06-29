@@ -138,9 +138,9 @@ in
 
     defaultModel = lib.mkOption {
       type = lib.types.str;
-      default = "gpt-5.5";
+      default = "openai-codex/gpt-5.5";
       example = "openai-codex/gpt-5.4";
-      description = "Default Pi model written to generated settings.json as `defaultModel`.";
+      description = "Default Pi model written to generated settings.json as `defaultModel`. Use a fully-qualified provider/model id.";
     };
 
     theme = lib.mkOption {
