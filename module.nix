@@ -108,6 +108,17 @@ let
     };
   };
   resourcePackageResources = name: lib.concatMap (pkg: pkg.${name}) config.pi.resourcePackages;
+  defaultModelParts = lib.splitString "/" config.pi.defaultModel;
+  generatedDefaultModel =
+    if builtins.length defaultModelParts > 1 then
+      {
+        defaultProvider = builtins.head defaultModelParts;
+        defaultModel = lib.concatStringsSep "/" (builtins.tail defaultModelParts);
+      }
+    else
+      {
+        defaultModel = config.pi.defaultModel;
+      };
   herdrPiExtension = "${config.pi.herdrIntegration.source}/src/integration/assets/pi/herdr-agent-state.ts";
   mattPocockResourcePackage = lib.optional config.pi.mattPocockSkills.enable {
     package = mattPocockSkillsPackage;
@@ -140,7 +151,7 @@ in
       type = lib.types.str;
       default = "openai-codex/gpt-5.5";
       example = "openai-codex/gpt-5.4";
-      description = "Default Pi model written to generated settings.json as `defaultModel`. Use a fully-qualified provider/model id.";
+      description = "Default Pi model. Use a fully-qualified provider/model id; generated settings split it into `defaultProvider` and `defaultModel` for Pi.";
     };
 
     theme = lib.mkOption {
@@ -422,7 +433,6 @@ in
       content = builtins.toJSON (
         {
           defaultProjectTrust = "ask";
-          defaultModel = config.pi.defaultModel;
           defaultThinkingLevel = "low";
           enableInstallTelemetry = false;
           theme = config.pi.theme;
@@ -444,6 +454,7 @@ in
           ++ resourcePackageResources "extensions"
           ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
         }
+        // generatedDefaultModel
         // config.pi.settings
       );
     };

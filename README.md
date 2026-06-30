@@ -45,7 +45,7 @@ overwritten on every launch.
 Consumers can also set these module options directly instead of overriding raw
 settings content:
 
-- `pi.defaultModel` -> generated `settings.json` `defaultModel` (use a fully-qualified id like `openai-codex/gpt-5.5`)
+- `pi.defaultModel` -> generated `settings.json` `defaultProvider`/`defaultModel` (use a fully-qualified id like `openai-codex/gpt-5.5`)
 - `pi.theme` -> generated `settings.json` `theme`
 - `pi.appendSystemPrompt` -> extra Markdown appended after the wrapper default in profile-local `APPEND_SYSTEM.md`
 - `pi.overrideSystemPrompt` -> replace profile-local `APPEND_SYSTEM.md` entirely
