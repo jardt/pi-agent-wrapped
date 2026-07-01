@@ -52,28 +52,26 @@ let
     base="$out/share/pi-packages/mattpocock-skills"
     mkdir -p "$base"
 
-    ${lib.concatMapStringsSep "\n" (
-      skill: ''
-        src_path="${config.pi.mattPocockSkills.source}/${skill}"
-        dst_path="$base/${skill}"
-        mkdir -p "$(dirname "$dst_path")"
-        cp -R "$src_path" "$dst_path"
-        chmod -R u+w "$dst_path"
+    ${lib.concatMapStringsSep "\n" (skill: ''
+      src_path="${config.pi.mattPocockSkills.source}/${skill}"
+      dst_path="$base/${skill}"
+      mkdir -p "$(dirname "$dst_path")"
+      cp -R "$src_path" "$dst_path"
+      chmod -R u+w "$dst_path"
 
-        ${lib.optionalString (config.pi.mattPocockSkills.hiddenSkills != [ ]) ''
-          case "${skill}" in
-            ${lib.concatMapStringsSep "\n            " (skill: ''
-              "${skill}")
-                skill_md="$dst_path/SKILL.md"
-                if ! grep -q '^disable-model-invocation:' "$skill_md"; then
-                  sed -i '/^description:/a disable-model-invocation: true' "$skill_md"
-                fi
-                ;;
-            '') config.pi.mattPocockSkills.hiddenSkills}
-          esac
-        ''}
-      ''
-    ) config.pi.mattPocockSkills.skills}
+      ${lib.optionalString (config.pi.mattPocockSkills.hiddenSkills != [ ]) ''
+        case "${skill}" in
+          ${lib.concatMapStringsSep "\n            " (skill: ''
+            "${skill}")
+              skill_md="$dst_path/SKILL.md"
+              if ! grep -q '^disable-model-invocation:' "$skill_md"; then
+                sed -i '/^description:/a disable-model-invocation: true' "$skill_md"
+              fi
+              ;;
+          '') config.pi.mattPocockSkills.hiddenSkills}
+        esac
+      ''}
+    '') config.pi.mattPocockSkills.skills}
   '';
   piResourcePackageType = lib.types.submodule {
     options = {
@@ -122,7 +120,9 @@ let
   herdrPiExtension = "${config.pi.herdrIntegration.source}/src/integration/assets/pi/herdr-agent-state.ts";
   mattPocockResourcePackage = lib.optional config.pi.mattPocockSkills.enable {
     package = mattPocockSkillsPackage;
-    skills = map (skill: "${mattPocockSkillsPackage}/share/pi-packages/mattpocock-skills/${skill}") config.pi.mattPocockSkills.skills;
+    skills = map (
+      skill: "${mattPocockSkillsPackage}/share/pi-packages/mattpocock-skills/${skill}"
+    ) config.pi.mattPocockSkills.skills;
   };
 in
 {
@@ -168,7 +168,8 @@ in
           package = fffPackage;
           extensions = [ "${fffPackage}/share/pi-packages/fff/src/index.ts" ];
         }
-      ] ++ mattPocockResourcePackage;
+      ]
+      ++ mattPocockResourcePackage;
       description = "Nix-built Pi packages exposed as generated settings resources.";
     };
 
@@ -184,8 +185,8 @@ in
         default = pkgs.fetchFromGitHub {
           owner = "mattpocock";
           repo = "skills";
-          rev = "6eeb81b5fcfeeb5bd531dd47ab2f9f2bbea27461";
-          hash = "sha256-6T0KwZcUIIbd6kpkQXPCnnJPVY2mEjxYjed4FjKnRAw=";
+          rev = "21f59763be7bf734cd4cf138805bb653d9ffebb7";
+          hash = "sha256-FCEEdmtV1jSImNf/KMAdsHqusmWsmHPQeGys/lAeRGg=";
         };
         description = "Pinned Matt Pocock skills source checkout.";
       };
@@ -276,8 +277,8 @@ in
         default = pkgs.fetchFromGitHub {
           owner = "ogulcancelik";
           repo = "herdr";
-          rev = "569c33b094ca1161bf2431fd9aa2c48b87dd688e";
-          hash = "sha256-1KBdx1PDcV3KYspbKJuv+ccaVMTWkSmujyMh68yXEEg=";
+          rev = "659c3f51ece42b7b761084bca0152fe4db56ebf6";
+          hash = "sha256-nVcW9Tc3zNHPZ8G/pikbE4gSHg2Dwhi4LCePV/OuuQw=";
         };
         description = "Pinned Herdr source containing the Pi integration extension.";
       };
@@ -391,9 +392,18 @@ in
           };
       in
       {
-        homeManager = lib.mkForce (launcherOnlyModule [ "home" "packages" ]);
-        nixos = lib.mkForce (launcherOnlyModule [ "environment" "systemPackages" ]);
-        darwin = lib.mkForce (launcherOnlyModule [ "environment" "systemPackages" ]);
+        homeManager = lib.mkForce (launcherOnlyModule [
+          "home"
+          "packages"
+        ]);
+        nixos = lib.mkForce (launcherOnlyModule [
+          "environment"
+          "systemPackages"
+        ]);
+        darwin = lib.mkForce (launcherOnlyModule [
+          "environment"
+          "systemPackages"
+        ]);
       };
 
     envDefault = {
@@ -449,10 +459,11 @@ in
           skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
           prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
           themes = [ resourceDirs.themes ] ++ resourcePackageResources "themes";
-          extensions = bundledExtensionPaths
-          ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
-          ++ resourcePackageResources "extensions"
-          ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
+          extensions =
+            bundledExtensionPaths
+            ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
+            ++ resourcePackageResources "extensions"
+            ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
         }
         // generatedDefaultModel
         // config.pi.settings
@@ -509,7 +520,12 @@ in
 
     runShell = [
       ''
-        configured_gondolin_image_path=${if config.pi.gondolin.imagePath == null then "''" else lib.escapeShellArg (toString config.pi.gondolin.imagePath)}
+        configured_gondolin_image_path=${
+          if config.pi.gondolin.imagePath == null then
+            "''"
+          else
+            lib.escapeShellArg (toString config.pi.gondolin.imagePath)
+        }
 
         resolve_gondolin_image_path() {
           if [ -f flake.nix ]; then
