@@ -26,8 +26,12 @@ const baseUrl = () =>
     process.env.CAMOFOX_BROWSER_URL ||
     "http://localhost:9377"
   ).replace(/\/+$/, "");
-const apiKey = () =>
-  process.env.CAMOFOX_API_KEY || process.env.CAMOFOX_BROWSER_API_KEY || "";
+async function apiKey() {
+  if (process.env.CAMOFOX_API_KEY) return process.env.CAMOFOX_API_KEY;
+  if (!process.env.CAMOFOX_API_KEY_FILE) return "";
+
+  return (await fs.readFile(process.env.CAMOFOX_API_KEY_FILE, "utf8")).trim();
+}
 const fallbackUserId = `pi-camofox-${randomUUID()}`;
 
 type ToolCtx = Parameters<
@@ -70,7 +74,7 @@ async function request(path: string, init: RequestInit = {}) {
   };
   if (init.body && !headers["Content-Type"])
     headers["Content-Type"] = "application/json";
-  const key = apiKey();
+  const key = await apiKey();
   if (key) headers.Authorization = `Bearer ${key}`;
   const res = await fetch(`${baseUrl()}${path}`, { ...init, headers });
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);

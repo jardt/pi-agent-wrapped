@@ -354,6 +354,12 @@ in
         default = "http://localhost:9377";
         description = "Camofox Browser REST API base URL exported as CAMOFOX_URL.";
       };
+
+      apiKeyFile = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = "Path to a file containing the Camofox Browser API key, exported as CAMOFOX_API_KEY_FILE when set.";
+      };
     };
 
     cheapModels = {
@@ -465,9 +471,14 @@ in
       PI_GONDOLIN_ENABLED = "1";
       PI_GONDOLIN_GUEST_MOUNT_PATH = config.pi.gondolin.guestMountPath;
     }
-    // lib.optionalAttrs config.pi.camofoxBrowser.enable {
-      CAMOFOX_URL = config.pi.camofoxBrowser.url;
-    }
+    // lib.optionalAttrs config.pi.camofoxBrowser.enable (
+      {
+        CAMOFOX_URL = config.pi.camofoxBrowser.url;
+      }
+      // lib.optionalAttrs (config.pi.camofoxBrowser.apiKeyFile != null) {
+        CAMOFOX_API_KEY_FILE = config.pi.camofoxBrowser.apiKeyFile;
+      }
+    )
     // lib.optionalAttrs (config.pi.cheapModels.primary != null) {
       PI_CHEAP_MODEL = config.pi.cheapModels.primary;
     }
