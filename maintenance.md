@@ -2,14 +2,16 @@
 
 ## Pi package
 
-This repo packages Pi directly instead of consuming `numtide/llm-agents.nix` for Pi. The local package is in `packages/pi/` and intentionally mirrors the `packages/pi` layout from `numtide/llm-agents.nix`.
+This repo packages Pi directly instead of consuming `numtide/llm-agents.nix` for Pi.
+
+Policy: package the latest upstream `main` commit, not the latest npm release. The npm release can lag behind Pi `main`.
 
 Files:
 
-- `packages/pi/package.nix` — Nix package for `@earendil-works/pi-coding-agent`.
+- `packages/pi/package.nix` — Nix source-build package for the Pi monorepo.
 - `packages/pi/default.nix` — small `callPackage` entrypoint.
-- `packages/pi/hashes.json` — pinned Pi version and Nix hashes.
-- `packages/pi/package-lock.json` — lockfile copied into the npm tarball source before `buildNpmPackage` runs.
+- `packages/pi/hashes.json` — pinned upstream `main` commit, display version, source hash, and npm dependency hash.
+- `packages/pi/generated/` — checked-in generated AI model catalogs used to keep the Nix build network-free.
 
 Consumers in this repo:
 
@@ -17,60 +19,69 @@ Consumers in this repo:
 - `packages/pi-resources.nix` receives that local Pi package.
 - `module.nix` defaults `config.package` to `pkgs.callPackage ./packages/pi { }`.
 
-## Updating Pi
+## Updating Pi to latest main
 
-Use npm as the source of truth:
+Always refresh the upstream checkout first:
 
 ```sh
-npm view @earendil-works/pi-coding-agent version dist.tarball --json
+# via librarian skill/tool, or equivalent git fetch
+# repo: earendil-works/pi
 ```
 
-Then update `packages/pi/hashes.json`:
+Then get the commit and version:
+
+```sh
+git -C ~/.cache/checkouts/github.com/earendil-works/pi rev-parse HEAD
+git -C ~/.cache/checkouts/github.com/earendil-works/pi describe --tags --always --dirty
+jq -r .version ~/.cache/checkouts/github.com/earendil-works/pi/packages/coding-agent/package.json
+```
+
+Update `packages/pi/hashes.json`:
 
 ```json
 {
-  "version": "X.Y.Z",
+  "version": "X.Y.Z-main-<shortrev>",
+  "rev": "<full upstream main commit>",
   "sourceHash": "sha256-...",
   "npmDepsHash": "sha256-..."
 }
 ```
 
-### 1. Update the source hash
+### 1. Update source hash
 
-Set the new version and temporarily use a dummy source hash, then build:
-
-```json
-"sourceHash": "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
-```
+Calculate the source hash from the exact commit:
 
 ```sh
-nix build .#pi --no-link
+rev=<full upstream main commit>
+nix hash convert --hash-algo sha256 --to sri \
+  "$(nix-prefetch-url --unpack https://github.com/earendil-works/pi/archive/$rev.tar.gz)"
 ```
 
-Nix will fail with the expected hash. Copy that into `packages/pi/hashes.json`.
+Copy the result into `sourceHash`.
 
-Alternatively, calculate it directly:
+### 2. Refresh generated model catalogs
+
+The Pi monorepo build generates provider model catalogs by fetching network APIs. Nix builds must not do that, so generate them outside Nix and commit them under `packages/pi/generated/`.
 
 ```sh
-nix hash convert --hash-algo sha256 --to sri "$(nix-prefetch-url --type sha256 https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-X.Y.Z.tgz)"
+cd ~/.cache/checkouts/github.com/earendil-works/pi
+npm --userconfig /dev/null install --ignore-scripts
+cd packages/ai
+npm --userconfig /dev/null run generate-models
+npm --userconfig /dev/null run generate-image-models
 ```
 
-### 2. Refresh `package-lock.json`
-
-The upstream npm tarball contains `npm-shrinkwrap.json`; this package removes it and supplies `package-lock.json`, following `numtide/llm-agents.nix`.
-
-Manual refresh:
+Copy generated files into this repo:
 
 ```sh
-tmp=$(mktemp -d)
-tar -xzf $(nix-prefetch-url https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-X.Y.Z.tgz) -C "$tmp" --strip-components=1
-cp "$tmp/npm-shrinkwrap.json" packages/pi/package-lock.json
-rm -rf "$tmp"
+rm -rf packages/pi/generated
+mkdir -p packages/pi/generated/providers
+cp ~/.cache/checkouts/github.com/earendil-works/pi/packages/ai/src/providers/*.models.ts packages/pi/generated/providers/
+cp ~/.cache/checkouts/github.com/earendil-works/pi/packages/ai/src/models.generated.ts packages/pi/generated/
+cp ~/.cache/checkouts/github.com/earendil-works/pi/packages/ai/src/image-models.generated.ts packages/pi/generated/
 ```
 
-If the tarball layout changes, inspect it first and copy/generate a valid npm lockfile for the package.
-
-### 3. Update the npm dependency hash
+### 3. Update npm dependency hash
 
 Set a dummy dependency hash:
 
@@ -81,29 +92,27 @@ Set a dummy dependency hash:
 Build:
 
 ```sh
-nix build .#pi --no-link
+nix build .#pi --no-link --builders ''
 ```
 
-Nix will fail with the expected `npmDepsHash`. Copy that into `packages/pi/hashes.json`.
+Nix will fail with the expected `npmDepsHash`. Copy the `got:` hash into `packages/pi/hashes.json`.
 
 ### 4. Validate
 
 ```sh
 nix fmt
-nix build .#pi --no-link
-nix build .#p --no-link
-```
-
-If remote builders hang while producing `pi-src-with-lock`, force local build for validation:
-
-```sh
 nix build .#pi --no-link --builders ''
 nix build .#p --no-link --builders ''
 ```
 
-## Notes
+`--builders ''` is useful because remote builders can hang or be slow for this source build.
 
-- Keep `packages/pi/package.nix` close to the upstream `numtide/llm-agents.nix/packages/pi/package.nix` implementation.
-- The npm package is already built, so `dontNpmBuild = true` is expected.
-- `postInstall` wraps `pi` with `fd` and `ripgrep` on `PATH`, and disables Pi version checks and telemetry by default.
+## Source-build notes
+
+- Latest `main` may not be published to npm yet. Do not depend on the npm tarball for Pi itself.
+- `packages/pi/package.nix` builds the monorepo from GitHub source.
+- Generated model catalogs are patched into `packages/ai/src` during `postPatch`.
+- The build patches scripts from `tsgo` to `tsc` and raises TypeScript target/lib to `ES2024` for Nix compatibility.
+- `npmRebuildFlags = [ "--ignore-scripts" ]` avoids native rebuild issues during the offline npm setup phase.
+- `packages/pi-resources.nix` warns instead of failing on extension devDependency Pi-version mismatch when the Pi package is a source-built main commit (`piPackage.rev` exists).
 - Do not reintroduce the `llm-agents` flake input just for Pi updates.

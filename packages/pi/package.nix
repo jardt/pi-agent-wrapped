@@ -1,43 +1,69 @@
 {
   lib,
   buildNpmPackage,
-  fetchurl,
+  fetchFromGitHub,
   fd,
   ripgrep,
-  runCommand,
 }:
 
 let
   versionData = lib.importJSON ./hashes.json;
-  version = versionData.version;
 
-  # Create a source with package-lock.json included
-  srcWithLock = runCommand "pi-src-with-lock" { } ''
-    mkdir -p $out
-    tar -xzf ${
-      fetchurl {
-        url = "https://registry.npmjs.org/@earendil-works/pi-coding-agent/-/pi-coding-agent-${version}.tgz";
-        hash = versionData.sourceHash;
-      }
-    } -C $out --strip-components=1
-    rm -f $out/npm-shrinkwrap.json
-    cp ${./package-lock.json} $out/package-lock.json
-  '';
+  source = fetchFromGitHub {
+    owner = "earendil-works";
+    repo = "pi";
+    rev = versionData.rev;
+    hash = versionData.sourceHash;
+  };
 in
 buildNpmPackage {
   npmDepsFetcherVersion = 2;
-  inherit version;
   pname = "pi";
+  version = versionData.version;
 
-  src = srcWithLock;
+  src = source;
+
+  postPatch = ''
+    cp ${./generated/models.generated.ts} packages/ai/src/models.generated.ts
+    cp ${./generated/image-models.generated.ts} packages/ai/src/image-models.generated.ts
+    cp ${./generated/providers}/*.models.ts packages/ai/src/providers/
+  '';
+
+  preBuild = ''
+    node - <<'NODE'
+    const fs = require("fs");
+    const tsconfigPath = "tsconfig.base.json";
+    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, "utf8"));
+    tsconfig.compilerOptions.target = "ES2024";
+    tsconfig.compilerOptions.lib = ["ES2024"];
+    fs.writeFileSync(tsconfigPath, JSON.stringify(tsconfig, null, "\t") + "\n");
+    for (const name of ["tui", "ai", "agent", "coding-agent", "orchestrator"]) {
+      const path = `packages/''${name}/package.json`;
+      const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+      pkg.scripts.build = pkg.scripts.build
+        .replace("npm run generate-models && npm run generate-image-models && ", "")
+        .replaceAll("tsgo -p", "tsc -p");
+      fs.writeFileSync(path, JSON.stringify(pkg, null, "\t") + "\n");
+    }
+    NODE
+  '';
 
   npmDepsHash = versionData.npmDepsHash;
   makeCacheWritable = true;
+  npmBuildScript = "build";
+  npmRebuildFlags = [ "--ignore-scripts" ];
 
-  # The package from npm is already built
-  dontNpmBuild = true;
+  installPhase = ''
+    runHook preInstall
 
-  postInstall = ''
+    mkdir -p $out/lib/node_modules $out/lib/packages $out/bin
+
+    cp -R node_modules/. $out/lib/node_modules/
+    cp -R packages/{agent,ai,coding-agent,orchestrator,tui} $out/lib/packages/
+
+    chmod +x $out/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js
+    ln -s $out/lib/node_modules/@earendil-works/pi-coding-agent/dist/cli.js $out/bin/pi
+
     wrapProgram $out/bin/pi \
       --prefix PATH : ${
         lib.makeBinPath [
@@ -47,16 +73,20 @@ buildNpmPackage {
       } \
       --set PI_SKIP_VERSION_CHECK 1 \
       --set PI_TELEMETRY 0
+
+    runHook postInstall
   '';
 
-  passthru.category = "AI Coding Agents";
+  passthru = {
+    category = "AI Coding Agents";
+    inherit (versionData) rev;
+  };
 
   meta = {
     description = "A terminal-based coding agent with multi-model support";
     homepage = "https://github.com/earendil-works/pi";
     changelog = "https://github.com/earendil-works/pi/releases";
     license = lib.licenses.mit;
-    sourceProvenance = with lib.sourceTypes; [ binaryBytecode ];
     platforms = lib.platforms.all;
     mainProgram = "pi";
   };

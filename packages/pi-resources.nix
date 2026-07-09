@@ -18,8 +18,17 @@ buildNpmPackage {
     runtime_pi_version=$(node -p "require('${piPackage}/lib/node_modules/@earendil-works/pi-coding-agent/package.json').version")
     declared_pi_version=$(node -p "require('./package.json').devDependencies['@earendil-works/pi-coding-agent']")
     if [ "$declared_pi_version" != "$runtime_pi_version" ]; then
-      echo "extensions/package.json @earendil-works/pi-coding-agent version ($declared_pi_version) does not match runtime Pi version ($runtime_pi_version)" >&2
-      exit 1
+      ${
+        if piPackage ? rev then
+          ''
+            echo "warning: extensions/package.json @earendil-works/pi-coding-agent version ($declared_pi_version) does not match source-built Pi version ($runtime_pi_version)" >&2
+          ''
+        else
+          ''
+            echo "extensions/package.json @earendil-works/pi-coding-agent version ($declared_pi_version) does not match runtime Pi version ($runtime_pi_version)" >&2
+            exit 1
+          ''
+      }
     fi
 
     npm run check
