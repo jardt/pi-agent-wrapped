@@ -23,7 +23,7 @@ let
     extensions = ./extensions;
   };
   agentTools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
-  piResources = pkgs.callPackage ./packages/pi-resources.nix { };
+  piResources = pkgs.callPackage ./packages/pi-resources.nix { piPackage = config.package; };
   fffPackage = pkgs.callPackage ./packages/pi-packages/fff.nix { };
   dynamicWorkflowsPackage = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
   bundledExtensionPath = name: "${piResources}/share/pi-resources/extensions/${name}.ts";
@@ -342,6 +342,20 @@ in
       };
     };
 
+    camofoxBrowser = {
+      enable = lib.mkOption {
+        type = lib.types.bool;
+        default = false;
+        description = "Whether to load the native Pi Camofox browser tools extension.";
+      };
+
+      url = lib.mkOption {
+        type = lib.types.str;
+        default = "http://localhost:9377";
+        description = "Camofox Browser REST API base URL exported as CAMOFOX_URL.";
+      };
+    };
+
     cheapModels = {
       primary = lib.mkOption {
         type = lib.types.nullOr lib.types.str;
@@ -451,6 +465,9 @@ in
       PI_GONDOLIN_ENABLED = "1";
       PI_GONDOLIN_GUEST_MOUNT_PATH = config.pi.gondolin.guestMountPath;
     }
+    // lib.optionalAttrs config.pi.camofoxBrowser.enable {
+      CAMOFOX_URL = config.pi.camofoxBrowser.url;
+    }
     // lib.optionalAttrs (config.pi.cheapModels.primary != null) {
       PI_CHEAP_MODEL = config.pi.cheapModels.primary;
     }
@@ -499,6 +516,9 @@ in
           extensions =
             bundledExtensionPaths
             ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
+            ++ lib.optionals config.pi.camofoxBrowser.enable [
+              "${piResources}/share/pi-resources/extensions/camofox-browser.ts"
+            ]
             ++ resourcePackageResources "extensions"
             ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
         }

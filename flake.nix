@@ -43,7 +43,9 @@
         in
         rec {
           pi-agent-tools = pkgs.callPackage ./packages/pi-agent-tools.nix { };
-          pi-resources = pkgs.callPackage ./packages/pi-resources.nix { };
+          pi-resources = pkgs.callPackage ./packages/pi-resources.nix {
+            piPackage = inputs.llm-agents.packages.${system}.pi;
+          };
           pi-fff = pkgs.callPackage ./packages/pi-packages/fff.nix { };
           pi-dynamic-workflows = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
           pi-wrapped = self.wrappers.pi.wrap { inherit pkgs; };

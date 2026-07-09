@@ -163,6 +163,8 @@ Feature-specific overrides still work:
 
 Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff` extension from `.#pi-fff` and the dynamic workflow extension from `.#pi-dynamic-workflows`.
 
+Extension resources are TypeScript-checked during the `pi-resources` Nix build. Pi API packages are dev-only typecheck inputs; the build verifies `@earendil-works/pi-coding-agent` matches the wrapped runtime Pi version, prunes dev dependencies before install, and fails if Pi runtime packages would be vendored into extension resources.
+
 Matt Pocock skills are available from a pinned upstream source via `pi.mattPocockSkills`. The default profile discovers and exposes all `skills/engineering/*` and `skills/in-progress/*` entries as manual-only skills by patching `disable-model-invocation: true` into their frontmatter. `skills/deprecated/*` and `skills/personal/*` are intentionally ignored by default.
 
 You can choose exactly which skill directories to expose, for example:
@@ -190,6 +192,26 @@ running inside Herdr, and stays inactive elsewhere. Disable with:
 ```nix
 pi.herdrIntegration.enable = false;
 ```
+
+## Camofox browser profile
+
+This repo includes a native Pi extension for Camofox Browser REST API tools:
+
+- extension: `extensions/camofox-browser.ts`
+- profile module: `profiles/camofox-browser.nix`
+
+Enable it with:
+
+```nix
+imports = [ /path/to/pi-agent-wrapped/profiles/camofox-browser.nix ];
+```
+
+Runtime secrets/config:
+
+- `CAMOFOX_API_KEY`: Camofox Browser API key
+- `CAMOFOX_URL`: optional override; defaults to `http://localhost:9377`
+
+Registered native tools mirror the Camofox plugin/MCP-style browser surface: `camofox_create_tab`, `camofox_snapshot`, `camofox_click`, `camofox_type`, `camofox_navigate`, history/refresh/scroll/screenshot/tab-list/close, console/error capture, tracing, and cookie import.
 
 ## Gondolin routing
 

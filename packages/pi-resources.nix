@@ -1,13 +1,37 @@
-{ buildNpmPackage }:
+{
+  buildNpmPackage,
+  lib,
+  piPackage,
+}:
 
 buildNpmPackage {
   pname = "pi-wrapped-resources";
   version = "0.1.0";
 
   src = ../extensions;
-  npmDepsHash = "sha256-BwCeUPp9EeHXwOvY6kEMkNncT3KsEngINyZdcLrpHN0=";
+  npmDepsHash = "sha256-OCrVAWLOtW2+3h0214LakZDHtzBhkooklwWVBCcm/WE=";
+  npmDepsFetcherVersion = 2;
 
-  dontNpmBuild = true;
+  buildPhase = ''
+    runHook preBuild
+
+    runtime_pi_version=$(node -p "require('${piPackage}/lib/node_modules/@earendil-works/pi-coding-agent/package.json').version")
+    declared_pi_version=$(node -p "require('./package.json').devDependencies['@earendil-works/pi-coding-agent']")
+    if [ "$declared_pi_version" != "$runtime_pi_version" ]; then
+      echo "extensions/package.json @earendil-works/pi-coding-agent version ($declared_pi_version) does not match runtime Pi version ($runtime_pi_version)" >&2
+      exit 1
+    fi
+
+    npm run check
+    npm prune --omit=dev
+
+    if [ -e node_modules/@earendil-works/pi-coding-agent ] || [ -e node_modules/@earendil-works/pi-ai ] || [ -e node_modules/@earendil-works/pi-tui ]; then
+      echo "Pi runtime packages must not be vendored into extension resources" >&2
+      exit 1
+    fi
+
+    runHook postBuild
+  '';
 
   installPhase = ''
     runHook preInstall
