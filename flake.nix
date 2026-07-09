@@ -75,6 +75,7 @@
 
       homeModules = {
         pi = self.nixosModules.pi;
+        camofoxBrowser = lib.modules.importApply ./profiles/home-camofox-browser.nix inputs;
         default = self.homeModules.pi;
       };
 
