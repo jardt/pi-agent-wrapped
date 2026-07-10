@@ -740,9 +740,21 @@ in
         rm -f "$profile_dir/APPEND_SYSTEM.md"
         cp ${config.constructFiles.generatedAppendSystemPrompt.path} "$profile_dir/APPEND_SYSTEM.md"
         case "$0" in
-          */*) launcher_bin="$0" ;;
-          *) launcher_bin="$(command -v -- "$0" 2>/dev/null || printf '%s' "$0")" ;;
+          */*) launcher_candidate="$0" ;;
+          *) launcher_candidate="$(command -v -- "$0" 2>/dev/null || true)" ;;
         esac
+        if [ -z "$launcher_candidate" ]; then
+          printf '%s\n' "pi wrapper: unable to resolve launcher path for $0" >&2
+          exit 1
+        fi
+        if ! launcher_bin="$(${pkgs.coreutils}/bin/readlink -f -- "$launcher_candidate")"; then
+          printf '%s\n' "pi wrapper: unable to canonicalize launcher path: $launcher_candidate" >&2
+          exit 1
+        fi
+        if [ ! -f "$launcher_bin" ] || [ ! -x "$launcher_bin" ]; then
+          printf '%s\n' "pi wrapper: canonical launcher is not an executable file: $launcher_bin" >&2
+          exit 1
+        fi
         export PI_LAUNCHER_BIN="$launcher_bin"
         export PI_CODING_AGENT_DIR="$profile_dir"
         export PI_PACKAGE_DIR="${config.package}/lib/node_modules/@earendil-works/pi-coding-agent"

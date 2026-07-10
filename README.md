@@ -28,14 +28,14 @@ ${XDG_STATE_HOME:-$HOME/.local/state}/pi-wrapped/default
 
 The wrapper executable is named `p`. It sets:
 
-- `PI_LAUNCHER_BIN` to the currently running wrapper binary; child Pi processes must reuse this exact launcher
+- `PI_LAUNCHER_BIN` to the canonical immutable path of the currently running wrapper binary; child Pi processes must reuse this exact launcher
 - `PI_CODING_AGENT_DIR`
 - `PI_PACKAGE_DIR`
 - `PI_CODING_AGENT_SESSION_DIR`
 - `PI_SKIP_VERSION_CHECK=1`
 - `PI_TELEMETRY=0`
 
-Each profile also gets its own generated `AGENTS.md` inside `PI_CODING_AGENT_DIR`, so profile-specific agent instructions follow the active wrapped launcher.
+Each profile also gets its own generated `AGENTS.md` inside `PI_CODING_AGENT_DIR`, so profile-specific agent instructions follow the active wrapped launcher. `run-current-pi` fails closed unless `PI_LAUNCHER_BIN` is an absolute, canonical, executable file.
 
 Each profile also gets a generated `APPEND_SYSTEM.md` inside `PI_CODING_AGENT_DIR` to append wrapper-specific response-style instructions without replacing Pi's default system prompt.
 
