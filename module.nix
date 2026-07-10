@@ -148,7 +148,7 @@ in
 
   options.pi = {
     profileName = lib.mkOption {
-      type = lib.types.nonEmptyStr;
+      type = lib.types.strMatching "[A-Za-z0-9][A-Za-z0-9._-]*";
       default = "default";
       description = "Name used for the isolated mutable Pi profile directory.";
     };
@@ -221,7 +221,11 @@ in
     };
 
     localSkills = lib.mkOption {
-      type = lib.types.listOf lib.types.str;
+      type = lib.types.listOf (
+        lib.types.enum (
+          builtins.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./skills))
+        )
+      );
       default = [
         "commit"
         "github"
@@ -313,7 +317,27 @@ in
     settings = lib.mkOption {
       type = jsonFmtType;
       default = { };
-      description = "Extra declarative Pi settings merged into generated settings.json.";
+      apply =
+        settings:
+        let
+          reserved = [
+            "defaultModel"
+            "defaultProvider"
+            "defaultProjectTrust"
+            "enableInstallTelemetry"
+            "extensions"
+            "packages"
+            "prompts"
+            "skills"
+            "themes"
+          ];
+          conflicts = builtins.filter (name: builtins.hasAttr name settings) reserved;
+        in
+        if conflicts == [ ] then
+          settings
+        else
+          throw "pi.settings contains reserved generated keys: ${lib.concatStringsSep ", " conflicts}";
+      description = "Extra declarative Pi settings merged into generated settings.json. Generated model, security, and resource keys are reserved; configure those through their dedicated pi options.";
     };
 
     keybindings = lib.mkOption {
@@ -589,8 +613,24 @@ in
             ++ resourcePackageResources "extensions"
             ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
         }
-        // generatedDefaultModel
         // config.pi.settings
+        // generatedDefaultModel
+        // {
+          defaultProjectTrust = "ask";
+          enableInstallTelemetry = false;
+          packages = config.pi.packages;
+          skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
+          prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
+          themes = [ resourceDirs.themes ] ++ resourcePackageResources "themes";
+          extensions =
+            bundledExtensionPaths
+            ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
+            ++ lib.optionals config.pi.camofoxBrowser.enable [
+              "${piResources}/share/pi-resources/extensions/camofox-browser.ts"
+            ]
+            ++ resourcePackageResources "extensions"
+            ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
+        }
       );
     };
 
@@ -672,7 +712,8 @@ in
           return 1
         }
 
-        profile_dir="${config.pi.stateRoot}/${config.pi.profileName}"
+        profile_name=${lib.escapeShellArg config.pi.profileName}
+        profile_dir="${config.pi.stateRoot}/$profile_name"
         mkdir -p "$profile_dir" "$profile_dir/sessions"
         rm -f "$profile_dir/settings.json"
         cp ${config.constructFiles.generatedSettings.path} "$profile_dir/settings.json"
