@@ -108,6 +108,7 @@ Pi package-loader entries can still be written declaratively with `pi.packages`,
 
 - `pi-fff` from <https://github.com/dmtrKovalenko/fff>
 - `pi-dynamic-workflows` from <https://github.com/Michaelliv/pi-dynamic-workflows>
+- `pi-codex-goal` from <https://github.com/fitchmultz/pi-codex-goal>
 
 Pi does not need to run `pi install` for default resources.
 
@@ -161,7 +162,7 @@ Feature-specific overrides still work:
 - skills: `tmux`, `herdr`, `commit`, `github`, plus `librarian` when `pi.librarian.mode = "skill"`
 - themes: `gruvbox-dark-hard`
 
-Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff` extension from `.#pi-fff` and the dynamic workflow extension from `.#pi-dynamic-workflows`.
+Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff`, dynamic workflow, and Codex-style goal extensions. Set `pi.goal.enable = false` to disable the goal extension and its `/create-goal` prompt template.
 
 Extension resources are TypeScript-checked during the `pi-resources` Nix build. Pi API packages are dev-only typecheck inputs; the build verifies `@earendil-works/pi-coding-agent` matches the wrapped runtime Pi version, prunes dev dependencies before install, and fails if Pi runtime packages would be vendored into extension resources.
 

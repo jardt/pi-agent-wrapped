@@ -29,6 +29,7 @@ let
   piResources = pkgs.callPackage ./packages/pi-resources.nix { piPackage = config.package; };
   fffPackage = pkgs.callPackage ./packages/pi-packages/fff.nix { };
   dynamicWorkflowsPackage = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
+  codexGoalPackage = pkgs.callPackage ./packages/pi-packages/codex-goal.nix { };
   bundledExtensionPath = name: "${piResources}/share/pi-resources/extensions/${name}.ts";
   bundledExtensionNames = [
     "better-openai"
@@ -208,6 +209,13 @@ in
             ];
           }
         ]
+        ++ lib.optionals config.pi.goal.enable [
+          {
+            package = codexGoalPackage;
+            extensions = [ "${codexGoalPackage}/share/pi-packages/codex-goal/src/index.ts" ];
+            prompts = [ "${codexGoalPackage}/share/pi-packages/codex-goal/prompts" ];
+          }
+        ]
         ++ mattPocockResourcePackage;
       description = "Nix-built Pi packages exposed as generated settings resources.";
     };
@@ -228,6 +236,12 @@ in
       type = lib.types.bool;
       default = true;
       description = "Whether to expose the packaged fff file-finder/grep extension.";
+    };
+
+    goal.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to expose the packaged Codex-style goal extension and prompt template.";
     };
 
     mattPocockSkills = {
