@@ -44,7 +44,11 @@ let
     "tree-summary-model"
   ];
   bundledExtensionPaths = map bundledExtensionPath (
-    lib.filter (name: name != "librarian" || config.pi.librarian.mode == "tool") bundledExtensionNames
+    lib.filter (
+      name:
+      builtins.elem name config.pi.bundledExtensions
+      && (name != "librarian" || config.pi.librarian.mode == "tool")
+    ) bundledExtensionNames
   );
   gondolinExtensionPath = bundledExtensionPath "gondolin";
   defaultAppendSystemPrompt = ''
@@ -201,7 +205,7 @@ in
             extensions = [ "${fffPackage}/share/pi-packages/fff/src/index.ts" ];
           }
         ]
-        ++ [
+        ++ lib.optionals config.pi.dynamicWorkflows.enable [
           {
             package = dynamicWorkflowsPackage;
             extensions = [
@@ -237,10 +241,22 @@ in
       description = "Local bundled skill directories from ./skills to expose to Pi.";
     };
 
+    bundledExtensions = lib.mkOption {
+      type = lib.types.listOf (lib.types.enum bundledExtensionNames);
+      default = bundledExtensionNames;
+      description = "Bundled extension names to expose to Pi.";
+    };
+
     fff.enable = lib.mkOption {
       type = lib.types.bool;
       default = true;
       description = "Whether to expose the packaged fff file-finder/grep extension.";
+    };
+
+    dynamicWorkflows.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = true;
+      description = "Whether to expose the packaged dynamic workflow extension.";
     };
 
     goal.enable = lib.mkOption {

@@ -49,9 +49,21 @@
           pi-dynamic-workflows = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
           pi-codex-goal = pkgs.callPackage ./packages/pi-packages/codex-goal.nix { };
           pi-wrapped = self.wrappers.pi.wrap { inherit pkgs; };
+          pi-minimal-wrapped =
+            (self.wrappers.pi.extendModules {
+              modules = [
+                ./profiles/minimal.nix
+                { binName = "p-minimal"; }
+              ];
+            }).config.wrap
+              { inherit pkgs; };
           p = pkgs.runCommand "pi-wrapped-p-only" { } ''
             mkdir -p $out/bin
             ln -s ${pi-wrapped}/bin/p $out/bin/p
+          '';
+          p-minimal = pkgs.runCommand "pi-wrapped-p-minimal-only" { } ''
+            mkdir -p $out/bin
+            ln -s ${pi-minimal-wrapped}/bin/p-minimal $out/bin/p-minimal
           '';
           default = p;
         }
@@ -61,6 +73,10 @@
         p = {
           type = "app";
           program = "${self.packages.${system}.p}/bin/p";
+        };
+        p-minimal = {
+          type = "app";
+          program = "${self.packages.${system}.p-minimal}/bin/p-minimal";
         };
         default = p;
       });
@@ -76,6 +92,7 @@
       homeModules = {
         pi = self.nixosModules.pi;
         camofoxBrowser = lib.modules.importApply ./profiles/home-camofox-browser.nix inputs;
+        minimal = lib.modules.importApply ./profiles/home-minimal.nix inputs;
         default = self.homeModules.pi;
       };
 

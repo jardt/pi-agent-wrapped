@@ -194,6 +194,35 @@ running inside Herdr, and stays inactive elsewhere. Disable with:
 pi.herdrIntegration.enable = false;
 ```
 
+## Minimal profile
+
+The independently installable minimal profile retains the default model,
+theme, keybindings, response style, status UI, session tree/compaction,
+context, split/fork, multi-edit, `fff`, Librarian, and Herdr integration. It
+exposes only the `commit` and `github` skills and omits Better OpenAI,
+`explore`, todos, dynamic workflows, goals, and Matt Pocock skills.
+
+```nix
+imports = [ inputs.pi-agent-wrapped.homeModules.minimal ];
+
+piProfiles.minimal.enable = true;
+```
+
+This installs `p-minimal` alongside the default `p` launcher and stores its
+mutable state under the isolated `minimal` profile directory.
+
+Without Home Manager, install the standalone package:
+
+```nix
+home.packages = [ inputs.pi-agent-wrapped.packages.${pkgs.system}.p-minimal ];
+```
+
+Or run it directly:
+
+```bash
+nix run github:earendil-works/pi-agent-wrapped#p-minimal
+```
+
 ## Camofox browser profile
 
 This repo includes a native Pi extension for Camofox Browser REST API tools:
