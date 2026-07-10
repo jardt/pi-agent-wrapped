@@ -49,6 +49,7 @@ Your job:
 - Then do targeted file reads; avoid wandering through huge files or directories.
 - Do not edit, write, delete, install, run servers, or make network calls.
 - Report concrete findings with file paths and relevant symbols.
+- Your report replaces broad parent-side reconnaissance: synthesize what matters instead of dumping raw file contents.
 - Keep the report concise but complete enough for the parent agent to act.
 - If something is uncertain, say what you checked and what remains unknown.
 
@@ -315,15 +316,27 @@ export default function exploreExtension(pi: ExtensionAPI) {
     name: "explore",
     label: "Explore",
     description:
-      "Launch a read-only scout subagent in a Herdr or tmux right split to explore the current codebase. Returns immediately; findings are delivered automatically when complete.",
+      "Offload read-only codebase reconnaissance to a scout in a Herdr or tmux right split. Returns immediately; findings are delivered automatically when complete. Use the scout report instead of repeating its investigation in the parent context.",
     promptSnippet:
-      "Use explore for read-only codebase reconnaissance. It launches a Herdr/tmux scout and returns findings automatically; do not poll for results.",
+      "Use explore to offload codebase reconnaissance and preserve the parent context window. Before launching, inspect only enough to define a bounded task. While it runs, avoid its delegated scope and prefer waiting for automatic delivery. After delivery, use its report as the repository map and inspect only targeted gaps needed for action; do not repeat the audit.",
+    promptGuidelines: [
+      "Use explore before broad parent-side repository inspection when a task requires reconnaissance; its purpose is context offloading, not duplicate parallel exploration.",
+      "Before calling explore, perform only minimal orientation needed to define a bounded scout task, such as required instructions, git status, or one small path/symbol lookup.",
+      "After calling explore, do not use read, bash, fffind, or ffgrep to repeat or expand the delegated investigation while it runs. Continue only clearly disjoint minimal work; if the answer depends on the scout, end the turn and wait for automatic delivery.",
+      "When the explore result arrives, treat it as the primary repository map. Inspect only specific files required for the immediate action or a clearly identified unresolved gap; do not rerun the scout's audit for confidence.",
+    ],
     parameters: ExploreParams,
     async execute(_toolCallId, params: ExploreParams, _signal, _onUpdate, ctx) {
       try {
         const run = await startExplore(params.task, ctx, pi);
         return {
-          content: [{ type: "text", text: `Explore started. Results will be delivered automatically. Session: ${run.sessionFile}` }],
+          content: [{
+            type: "text",
+            text:
+              `Explore started. Results will be delivered automatically. Session: ${run.sessionFile}\n` +
+              "The delegated scope is now scout-owned. Do not repeat or expand that investigation in the parent context. " +
+              "Continue only clearly disjoint minimal work, or end this turn and wait for delivery.",
+          }],
           details: { id: run.id, task: params.task, backend: run.backend, sessionFile: run.sessionFile, scriptFile: run.scriptFile, status: "started" },
         };
       } catch (error) {
