@@ -227,6 +227,7 @@ in
         "github"
         "herdr"
         "librarian"
+        "session-reader"
         "tmux"
       ];
       description = "Local bundled skill directories from ./skills to expose to Pi.";
@@ -538,7 +539,10 @@ in
       PI_CHEAP_FALLBACK_MODELS = lib.concatStringsSep "," config.pi.cheapModels.fallbacks;
     };
 
-    runtimePkgs = [ agentTools ];
+    runtimePkgs = [
+      agentTools
+      pkgs.python3
+    ];
 
     drv.postBuild = ''
       rm -f "$out/bin/pi" "$out/bin/.pi-wrapped"

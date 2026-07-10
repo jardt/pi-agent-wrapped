@@ -105,6 +105,12 @@ nix build .#p --allow-import-from-derivation
 
 Optional sanity check: inspect generated settings and confirm `extensions` contains the Herdr store path ending in `src/integration/assets/pi/herdr-agent-state.ts`.
 
+### Vendored session-reader skill
+
+`skills/session-reader/` is based on <https://github.com/HazAT/pi-config/tree/main/skills/session-reader>, currently from commit `6770b7fbe38823e0932b1315ce6188c91129462a` (the skill's latest upstream change is `ecf52fe6003e37f211cae5c50acba1398886abca`). It is intentionally vendored because wrapped Pi uses `PI_CODING_AGENT_SESSION_DIR` and Pi-relative skill paths rather than `~/.pi/agent/sessions` and `CLAUDE_SKILL_ROOT`.
+
+When refreshing it, preserve those wrapper-specific changes and test the parser against a session under the active profile.
+
 ### Matt Pocock skills source
 
 `module.nix` exposes a pinned snapshot of <https://github.com/mattpocock/skills> through `pi.mattPocockSkills.source`. Individual skills are opt-in via `pi.mattPocockSkills.skills`.
