@@ -1,0 +1,6 @@
+const ANSI = /\x1b\[[0-?]*[ -/]*[@-~]/g;
+export function sanitizeError(error: unknown, max = 300): string { const raw = error instanceof Error ? error.message : String(error); const clean = raw.replace(ANSI, "").replace(/Bearer\s+\S+/gi, "Bearer [REDACTED]").replace(/\b(?:sk|acct)-?[_A-Za-z0-9.-]{6,}\b/g, "[REDACTED]").replace(/[\x00-\x1f\x7f-\x9f]/g, " ").replace(/\s+/g, " ").trim() || "Unknown error"; return clean.length <= max ? clean : clean.slice(0, max - 1) + "…"; }
+export function maskIdentifier(v?: string): string { if (!v) return "none"; return v.length <= 8 ? "found" : `${v.slice(0, 4)}…${v.slice(-4)}`; }
+export function formatPercent(v: number | null): string { return v === null ? "--" : `${Math.round(Math.max(0, Math.min(100, v)))}%`; }
+export function countdown(seconds: number | null): string { if (seconds === null) return "unknown"; const n = Math.max(0, Math.round(seconds)); const d = Math.floor(n / 86400), h = Math.floor(n % 86400 / 3600), m = Math.floor(n % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : m ? `${m}m` : `${n}s`; }
+export function localReset(seconds: number | null): string { return seconds === null ? "unknown" : new Date(Date.now() + Math.max(0, seconds) * 1000).toLocaleString(); }

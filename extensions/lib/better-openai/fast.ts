@@ -1,0 +1,6 @@
+// Derived in part from mattleong/pi-better-openai (MIT). See THIRD_PARTY_NOTICES.md.
+import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ResolvedConfig } from "./config.ts";
+export function modelKey(ctx: Pick<ExtensionContext, "model">): string { return ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "none"; }
+export function supportsFast(ctx: Pick<ExtensionContext, "model">, cfg: ResolvedConfig): boolean { return cfg.supportedModels.some(m => `${m.provider}/${m.id}` === modelKey(ctx)); }
+export class FastController { desired = false; active = false; initialize(ctx: ExtensionContext, cfg: ResolvedConfig, flag: boolean) { this.desired = (cfg.persistState && cfg.desiredActive) || flag; this.apply(ctx, cfg); } apply(ctx: ExtensionContext, cfg: ResolvedConfig) { this.active = this.desired && supportsFast(ctx, cfg); } toggle(ctx: ExtensionContext, cfg: ResolvedConfig) { this.desired = !this.desired; this.apply(ctx, cfg); } inject(payload: unknown, ctx: ExtensionContext, cfg: ResolvedConfig): unknown { return this.active && supportsFast(ctx, cfg) && payload && typeof payload === "object" && !Array.isArray(payload) ? { ...payload, service_tier: "priority" } : undefined; } }

@@ -31,6 +31,7 @@ let
   dynamicWorkflowsPackage = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
   bundledExtensionPath = name: "${piResources}/share/pi-resources/extensions/${name}.ts";
   bundledExtensionNames = [
+    "better-openai"
     "clanker-working-messages"
     "context"
     "explore"

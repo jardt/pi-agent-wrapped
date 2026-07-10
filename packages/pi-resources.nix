@@ -46,7 +46,7 @@ buildNpmPackage {
     runHook preInstall
 
     mkdir -p $out/share/pi-resources/extensions
-    cp -R *.ts explore-helper lib node_modules package.json package-lock.json $out/share/pi-resources/extensions/
+    cp -R *.ts THIRD_PARTY_NOTICES.md explore-helper lib node_modules package.json package-lock.json $out/share/pi-resources/extensions/
 
     runHook postInstall
   '';
