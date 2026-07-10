@@ -24,6 +24,7 @@ buildNpmPackage {
   src = source;
 
   postPatch = ''
+    patch -p1 < ${./tree-summary-stream-fn.patch}
     cp ${./generated/models.generated.ts} packages/ai/src/models.generated.ts
     cp ${./generated/image-models.generated.ts} packages/ai/src/image-models.generated.ts
     cp ${./generated/providers}/*.models.ts packages/ai/src/providers/

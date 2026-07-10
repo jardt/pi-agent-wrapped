@@ -21,7 +21,9 @@ import { resolveCheapModel } from "./lib/model-selection";
 
 export default function (pi: ExtensionAPI) {
 	pi.on("session_before_tree", async (event, ctx) => {
-		const { preparation, signal } = event;
+		const { preparation, signal, streamFn } = event as typeof event & {
+			streamFn: Parameters<typeof generateBranchSummary>[1]["streamFn"];
+		};
 		if (!preparation.userWantsSummary || preparation.entriesToSummarize.length === 0) return;
 
 		const selected = await resolveCheapModel(ctx, {
@@ -47,6 +49,7 @@ export default function (pi: ExtensionAPI) {
 				headers,
 				signal,
 				reserveTokens: config.reserveTokens ?? 16384,
+				streamFn,
 			});
 
 			if (result.aborted) return { cancel: true };

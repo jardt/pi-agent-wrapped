@@ -159,7 +159,10 @@ Feature-specific overrides still work:
 - `PI_EXPLORE_MODEL`, `PI_EXPLORE_FALLBACK_MODELS`
 - `PI_TREE_SUMMARY_MODEL`, `PI_TREE_SUMMARY_FALLBACK_MODELS`
 - `PI_COMPACTION_MODEL`, `PI_COMPACTION_FALLBACK_MODELS`
-- skills: `tmux`, `herdr`, `commit`, `github`, `session-reader`, plus `librarian` when `pi.librarian.mode = "skill"`
+
+This repository patches Pi via `packages/pi/tree-summary-stream-fn.patch`. The patch exposes the session `streamFn` on `session_before_tree`, allowing `tree-summary-model.ts` to run branch summaries through the session's normal model request path.
+
+- skills: `tmux`, `herdr`, `commit`, `github`, `session-reader`, plus `librarian` when `pi.librarian.mode = "skill"
 - themes: `gruvbox-dark-hard`
 
 Nix-built Pi resource packages are also written into generated settings via `pi.resourcePackages`; the default profile exposes the `pi-fff`, dynamic workflow, and Codex-style goal extensions. Set `pi.goal.enable = false` to disable the goal extension and its `/create-goal` prompt template.
