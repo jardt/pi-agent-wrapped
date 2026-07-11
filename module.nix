@@ -51,19 +51,6 @@ let
     ) bundledExtensionNames
   );
   gondolinExtensionPath = bundledExtensionPath "gondolin";
-  defaultAppendSystemPrompt = ''
-    # Response style
-
-    Default voice: terse, precise, robot-like.
-
-    - Lead with answer. No pleasantries, filler, hedging, or performative enthusiasm.
-    - Prefer compact technical statements. Fragments OK when unambiguous.
-    - Keep exact technical terms, paths, commands, errors, and code unchanged.
-    - Use arrows for causality when concise: `X -> Y`.
-    - Add detail only when it improves correctness, safety, or next action clarity.
-    - For destructive, security-sensitive, or multi-step instructions, use clear full sentences.
-    - If user asks for normal/plain/expanded wording, follow that request.
-  '';
   splashLogoTextJson = builtins.toJSON config.pi.splash.logoText;
   splashVersionTextJson = builtins.toJSON config.pi.splash.versionText;
   splashCompactHelpTextJson = builtins.toJSON config.pi.splash.compactHelpText;
@@ -508,13 +495,13 @@ in
     appendSystemPrompt = lib.mkOption {
       type = lib.types.lines;
       default = "";
-      description = "Extra Markdown appended after the wrapper default in profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR`.";
+      description = "Markdown written to profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR`.";
     };
 
     overrideSystemPrompt = lib.mkOption {
       type = lib.types.nullOr lib.types.lines;
       default = null;
-      description = "When set, replaces the entire profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR` instead of using the wrapper default plus `pi.appendSystemPrompt`.";
+      description = "When set, replaces `pi.appendSystemPrompt` in profile-local `APPEND_SYSTEM.md` under `PI_CODING_AGENT_DIR`.";
     };
 
     splash = {
@@ -726,7 +713,7 @@ in
         if config.pi.overrideSystemPrompt != null then
           config.pi.overrideSystemPrompt
         else
-          defaultAppendSystemPrompt + config.pi.appendSystemPrompt;
+          config.pi.appendSystemPrompt;
     };
 
     runShell = [
