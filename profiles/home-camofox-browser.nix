@@ -8,7 +8,7 @@ inputs:
 let
   cfg = config.piProfiles.camofoxBrowser;
   piCamofoxWrapped =
-    (inputs.self.wrappers.pi.extendModules {
+    (inputs.self.wrappers.personal.extendModules {
       modules = [
         ./camofox-browser.nix
         {
@@ -43,8 +43,8 @@ let
     ownership = "declarative";
     sourcePath = "pi-agent-wrapped/profiles/home-camofox-browser.nix";
     discoveryWiring = [
-      "~/.local/state/pi-wrapped/default/skills/delegate-with-herdr"
-      "~/.local/state/pi-wrapped/${cfg.profileName}/skills/delegate-with-herdr"
+      "${config.xdg.stateHome}/pi-wrapped/default/skills/delegate-with-herdr"
+      "${config.xdg.stateHome}/pi-wrapped/${cfg.profileName}/skills/delegate-with-herdr"
     ];
     delegatingProfiles = [
       "default"
@@ -110,9 +110,13 @@ in
 
   config = lib.mkIf cfg.enable {
     home.packages = [ piCamofoxLauncher ];
-    home.file = lib.mkIf (cfg.herdrSubagentsPackage != null) {
-      ".local/state/pi-wrapped/default/skills/delegate-with-herdr".source = delegateSkill;
-      ".local/state/pi-wrapped/${cfg.profileName}/skills/delegate-with-herdr".source = delegateSkill;
+    # xdg.stateFile follows config.xdg.stateHome, matching the wrapper's
+    # default pi.stateRoot ("''${XDG_STATE_HOME:-$HOME/.local/state}/pi-wrapped").
+    # If pi.stateRoot is customized away from that default, this wiring must
+    # be adjusted to match.
+    xdg.stateFile = lib.mkIf (cfg.herdrSubagentsPackage != null) {
+      "pi-wrapped/default/skills/delegate-with-herdr".source = delegateSkill;
+      "pi-wrapped/${cfg.profileName}/skills/delegate-with-herdr".source = delegateSkill;
     };
   };
 }

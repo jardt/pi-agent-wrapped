@@ -11,7 +11,7 @@
 When spawning a new Pi process:
 
 - always use `PI_LAUNCHER_BIN` or `run-current-pi`
-- never invoke `pi`, `p`, `p-minimal`, `p-sandboxed`, or any other launcher name directly
+- never invoke `pi`, `p`, `p-minimal`, or any other launcher name directly
 - if `PI_LAUNCHER_BIN` is unset, fail instead of guessing
 
 This applies to:
@@ -32,6 +32,15 @@ run-current-pi
 run-current-pi --session /path/to/session.jsonl
 herdr pane run "$PANE" "run-current-pi --session '/path/to/session.jsonl'"
 ```
+
+## Generic vs personal layering
+
+This repo has two layers; keep them separate:
+
+- `module.nix` is the generic public wrapper module. All defaults must stay neutral: no personal models, themes, keybindings, skills, or third-party integrations enabled by default. New options belong here with off/empty defaults.
+- `presets/personal.nix` carries the personal configuration, applied with `lib.mkDefault` so profiles and consumers can override it. Personal opinions go here, never into `module.nix` defaults.
+
+Flake outputs follow the same split: `wrapperModules.pi` / `wrappers.pi` / `nixosModules.pi` / `homeModules.pi` are generic; the `personal` variants (and the `p*` packages/apps and profile home modules) build on the preset.
 
 ## Pi profile packaging model
 

@@ -8,7 +8,7 @@ inputs:
 let
   cfg = config.piProfiles.minimal;
   piMinimalWrapped =
-    (inputs.self.wrappers.pi.extendModules {
+    (inputs.self.wrappers.personal.extendModules {
       modules = [
         ./minimal.nix
         {

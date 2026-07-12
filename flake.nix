@@ -20,17 +20,29 @@
       systems = lib.systems.flakeExposed;
       forEachSystem = lib.genAttrs systems;
       wrapperModule = lib.modules.importApply ./module.nix inputs;
+      personalWrapperModule = {
+        imports = [
+          wrapperModule
+          ./presets/personal.nix
+        ];
+      };
       wrapper = nix-wrapper-modules.lib.evalModule wrapperModule;
+      personalWrapper = nix-wrapper-modules.lib.evalModule personalWrapperModule;
     in
     {
+      # `pi` is the generic, unopinionated module; `personal` layers
+      # presets/personal.nix on top of it. Every `default` alias points at
+      # `personal` to keep existing consumers of this flake unchanged.
       wrapperModules = {
         pi = wrapperModule;
-        default = self.wrapperModules.pi;
+        personal = personalWrapperModule;
+        default = self.wrapperModules.personal;
       };
 
       wrappers = {
         pi = wrapper.config;
-        default = self.wrappers.pi;
+        personal = personalWrapper.config;
+        default = self.wrappers.personal;
       };
 
       packages = forEachSystem (
@@ -47,9 +59,9 @@
           pi-fff = pkgs.callPackage ./packages/pi-packages/fff.nix { };
           pi-dynamic-workflows = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
           pi-codex-goal = pkgs.callPackage ./packages/pi-packages/codex-goal.nix { };
-          pi-wrapped = self.wrappers.pi.wrap { inherit pkgs; };
+          pi-wrapped = self.wrappers.personal.wrap { inherit pkgs; };
           pi-minimal-wrapped =
-            (self.wrappers.pi.extendModules {
+            (self.wrappers.personal.extendModules {
               modules = [
                 ./profiles/minimal.nix
                 { binName = "p-minimal"; }
@@ -80,19 +92,27 @@
         default = p;
       });
 
+      # Both install modules expose their wrapper as `wrappers.pi` in the
+      # target configuration; `default` keeps the personal preset so existing
+      # consumers of this flake keep their behavior.
       nixosModules = {
         pi = nix-wrapper-modules.lib.getInstallModule {
           name = "pi";
           value = wrapperModule;
         };
-        default = self.nixosModules.pi;
+        personal = nix-wrapper-modules.lib.getInstallModule {
+          name = "pi";
+          value = personalWrapperModule;
+        };
+        default = self.nixosModules.personal;
       };
 
       homeModules = {
         pi = self.nixosModules.pi;
+        personal = self.nixosModules.personal;
         camofoxBrowser = lib.modules.importApply ./profiles/home-camofox-browser.nix inputs;
         minimal = lib.modules.importApply ./profiles/home-minimal.nix inputs;
-        default = self.homeModules.pi;
+        default = self.homeModules.personal;
       };
 
       devShells = forEachSystem (
@@ -121,13 +141,7 @@
         let
           pkgs = import nixpkgs { inherit system; };
         in
-        pkgs.writeShellApplication {
-          name = "fmt";
-          runtimeInputs = [ pkgs.nixfmt ];
-          text = ''
-            nixfmt flake.nix module.nix packages/pi/package.nix packages/pi/default.nix packages/pi-agent-tools.nix packages/pi-resources.nix packages/pi-packages/fff.nix packages/pi-packages/dynamic-workflows.nix packages/pi-packages/codex-goal.nix packages/pi-packages/herdr-subagents.nix "$@"
-          '';
-        }
+        pkgs.nixfmt-tree
       );
     };
 }

@@ -117,7 +117,9 @@ let
   resourcePackageResources = name: lib.concatMap (pkg: pkg.${name}) config.pi.resourcePackages;
   defaultModelParts = lib.splitString "/" config.pi.defaultModel;
   generatedDefaultModel =
-    if builtins.length defaultModelParts > 1 then
+    if config.pi.defaultModel == null then
+      { }
+    else if builtins.length defaultModelParts > 1 then
       {
         defaultProvider = builtins.head defaultModelParts;
         defaultModel = lib.concatStringsSep "/" (builtins.tail defaultModelParts);
@@ -126,6 +128,14 @@ let
       {
         defaultModel = config.pi.defaultModel;
       };
+  generatedExtensions =
+    bundledExtensionPaths
+    ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
+    ++ lib.optionals config.pi.camofoxBrowser.enable [
+      "${piResources}/share/pi-resources/extensions/camofox-browser.ts"
+    ]
+    ++ resourcePackageResources "extensions"
+    ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
   herdrPiExtension = "${config.pi.herdrIntegration.source}/src/integration/assets/pi/herdr-agent-state.ts";
   mattPocockResourcePackage = lib.optional config.pi.mattPocockSkills.enable {
     package = mattPocockSkillsPackage;
@@ -157,30 +167,48 @@ in
     };
 
     defaultModel = lib.mkOption {
-      type = lib.types.str;
-      default = "openai-codex/gpt-5.6-sol";
+      type = lib.types.nullOr lib.types.str;
+      default = null;
       example = "openai-codex/gpt-5.6-terra";
-      description = "Default Pi model. Use a fully-qualified provider/model id; generated settings split it into `defaultProvider` and `defaultModel` for Pi.";
+      description = "Default Pi model. Use a fully-qualified provider/model id; generated settings split it into `defaultProvider` and `defaultModel` for Pi. When null, no default model is written and Pi's own selection applies.";
+    };
+
+    enabledModels = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [
+        "openai-codex/gpt-5.6-terra"
+        "anthropic/claude-haiku-4-5"
+      ];
+      description = "Model allowlist written to generated settings.json as `enabledModels`. An empty list omits the key, leaving all models available.";
     };
 
     defaultThinkingLevel = lib.mkOption {
-      type = lib.types.enum [
-        "off"
-        "minimal"
-        "low"
-        "medium"
-        "high"
-        "xhigh"
-      ];
-      default = "low";
-      description = "Default reasoning effort written to generated settings.json.";
+      type = lib.types.nullOr (
+        lib.types.enum [
+          "off"
+          "minimal"
+          "low"
+          "medium"
+          "high"
+          "xhigh"
+        ]
+      );
+      default = null;
+      description = "Default reasoning effort written to generated settings.json. When null, the key is omitted and Pi's own default applies.";
+    };
+
+    projectTrust = lib.mkOption {
+      type = lib.types.str;
+      default = "ask";
+      description = "Value written to generated settings.json as `defaultProjectTrust`.";
     };
 
     theme = lib.mkOption {
-      type = lib.types.str;
-      default = "gruvbox-dark-hard";
+      type = lib.types.nullOr lib.types.str;
+      default = null;
       example = "gruvbox-dark-hard";
-      description = "Default Pi theme written to generated settings.json as `theme`.";
+      description = "Pi theme written to generated settings.json as `theme`. When null, the key is omitted and Pi's own default applies.";
     };
 
     resourcePackages = lib.mkOption {
@@ -234,38 +262,36 @@ in
           builtins.attrNames (lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./skills))
         )
       );
-      default = [
+      default = [ ];
+      example = [
         "commit"
         "github"
-        "herdr"
-        "librarian"
-        "session-reader"
-        "tmux"
       ];
       description = "Local bundled skill directories from ./skills to expose to Pi.";
     };
 
     bundledExtensions = lib.mkOption {
       type = lib.types.listOf (lib.types.enum bundledExtensionNames);
-      default = bundledExtensionNames;
+      default = [ ];
+      example = bundledExtensionNames;
       description = "Bundled extension names to expose to Pi.";
     };
 
     fff.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to expose the packaged fff file-finder/grep extension.";
     };
 
     dynamicWorkflows.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to expose the packaged dynamic workflow extension.";
     };
 
     goal.enable = lib.mkOption {
       type = lib.types.bool;
-      default = true;
+      default = false;
       description = "Whether to expose the packaged Codex-style goal extension and prompt template.";
     };
 
@@ -286,8 +312,8 @@ in
     mattPocockSkills = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
-        description = "Whether to expose selected Matt Pocock skills from a pinned upstream snapshot.";
+        default = false;
+        description = "Whether to expose selected Matt Pocock skills from a pinned upstream snapshot. Note: the default skill list is discovered with import-from-derivation.";
       };
 
       source = lib.mkOption {
@@ -358,11 +384,14 @@ in
             "defaultModel"
             "defaultProvider"
             "defaultProjectTrust"
+            "defaultThinkingLevel"
+            "enabledModels"
             "enableInstallTelemetry"
             "extensions"
             "packages"
             "prompts"
             "skills"
+            "theme"
             "themes"
           ];
           conflicts = builtins.filter (name: builtins.hasAttr name settings) reserved;
@@ -376,27 +405,12 @@ in
 
     keybindings = lib.mkOption {
       type = jsonFmtType;
-      default = {
+      default = { };
+      example = {
         "tui.editor.cursorUp" = [
           "up"
           "ctrl+p"
         ];
-        "tui.editor.cursorDown" = [
-          "down"
-          "ctrl+n"
-        ];
-        "tui.select.up" = [
-          "up"
-          "ctrl+p"
-        ];
-        "tui.select.down" = [
-          "down"
-          "ctrl+n"
-        ];
-        "app.model.cycleForward" = [ ];
-        "app.session.togglePath" = [ ];
-        "app.models.toggleProvider" = [ ];
-        "app.session.toggleNamedFilter" = "ctrl+shift+n";
       };
       description = "Declarative Pi keybindings written to generated keybindings.json.";
     };
@@ -404,7 +418,7 @@ in
     herdrIntegration = {
       enable = lib.mkOption {
         type = lib.types.bool;
-        default = true;
+        default = false;
         description = "Whether to declaratively load Herdr's Pi integration extension.";
       };
 
@@ -606,64 +620,57 @@ in
       rm -f "$out/bin/pi" "$out/bin/.pi-wrapped"
 
       interactive_mode="$out/lib/node_modules/@earendil-works/pi-coding-agent/dist/modes/interactive/interactive-mode.js"
-      if [ -f "$interactive_mode" ]; then
-        splash_logo_text=${lib.escapeShellArg splashLogoTextJson}
-        splash_version_text=${lib.escapeShellArg splashVersionTextJson}
-        splash_compact_help_text=${lib.escapeShellArg splashCompactHelpTextJson}
-        splash_help_text=${lib.escapeShellArg splashHelpTextJson}
-        SPLASH_LOGO_TEXT="$splash_logo_text" SPLASH_VERSION_TEXT="$splash_version_text" ${pkgs.perl}/bin/perl -0pi -e 's/const logo = theme\.bold\(theme\.fg\("accent", APP_NAME\)\) \+ theme\.fg\("dim", ` v\$\{this\.version\}`\);/const logo = theme.bold(theme.fg("accent", $ENV{SPLASH_LOGO_TEXT})) + ($ENV{SPLASH_VERSION_TEXT} === "null" ? "" : theme.fg("dim", $ENV{SPLASH_VERSION_TEXT}.replace("{version}", this.version)));/' "$interactive_mode"
-        SPLASH_COMPACT_HELP_TEXT="$splash_compact_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const compactOnboarding = theme\.fg\("dim", `Press \$\{keyText\("app\.tools\.expand"\)\} to show full startup help and loaded resources\.`\);/const compactOnboarding = theme.fg("dim", $ENV{SPLASH_COMPACT_HELP_TEXT}.replace("{expandKey}", keyText("app.tools.expand")));/' "$interactive_mode"
-        SPLASH_HELP_TEXT="$splash_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const onboarding = theme\.fg\("dim", `Pi can explain its own features and look up its docs\. Ask it how to use or extend Pi\.`\);/const onboarding = theme.fg("dim", $ENV{SPLASH_HELP_TEXT});/' "$interactive_mode"
+      if [ ! -f "$interactive_mode" ]; then
+        echo "pi-wrapped splash patch: interactive-mode.js not found at expected path; upstream layout changed" >&2
+        exit 1
       fi
+      splash_require() {
+        grep -qF -e "$1" "$interactive_mode" || {
+          echo "pi-wrapped splash patch: marker for $2 not found; upstream source changed" >&2
+          exit 1
+        }
+      }
+      splash_forbid() {
+        if grep -qF -e "$1" "$interactive_mode"; then
+          echo "pi-wrapped splash patch: substitution for $2 did not apply" >&2
+          exit 1
+        fi
+      }
+      splash_require 'theme.fg("accent", APP_NAME)' "splash logo"
+      splash_require 'Press ''${keyText("app.tools.expand")} to show full startup help' "compact splash help"
+      splash_require 'theme.fg("dim", `Pi can explain its own features' "splash help"
+      splash_logo_text=${lib.escapeShellArg splashLogoTextJson}
+      splash_version_text=${lib.escapeShellArg splashVersionTextJson}
+      splash_compact_help_text=${lib.escapeShellArg splashCompactHelpTextJson}
+      splash_help_text=${lib.escapeShellArg splashHelpTextJson}
+      SPLASH_LOGO_TEXT="$splash_logo_text" SPLASH_VERSION_TEXT="$splash_version_text" ${pkgs.perl}/bin/perl -0pi -e 's/const logo = theme\.bold\(theme\.fg\("accent", APP_NAME\)\) \+ theme\.fg\("dim", ` v\$\{this\.version\}`\);/const logo = theme.bold(theme.fg("accent", $ENV{SPLASH_LOGO_TEXT})) + ($ENV{SPLASH_VERSION_TEXT} === "null" ? "" : theme.fg("dim", $ENV{SPLASH_VERSION_TEXT}.replace("{version}", this.version)));/' "$interactive_mode"
+      SPLASH_COMPACT_HELP_TEXT="$splash_compact_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const compactOnboarding = theme\.fg\("dim", `Press \$\{keyText\("app\.tools\.expand"\)\} to show full startup help and loaded resources\.`\);/const compactOnboarding = theme.fg("dim", $ENV{SPLASH_COMPACT_HELP_TEXT}.replace("{expandKey}", keyText("app.tools.expand")));/' "$interactive_mode"
+      SPLASH_HELP_TEXT="$splash_help_text" ${pkgs.perl}/bin/perl -0pi -e 's/const onboarding = theme\.fg\("dim", `Pi can explain its own features and look up its docs\. Ask it how to use or extend Pi\.`\);/const onboarding = theme.fg("dim", $ENV{SPLASH_HELP_TEXT});/' "$interactive_mode"
+      splash_forbid 'theme.fg("accent", APP_NAME)' "splash logo"
+      splash_forbid 'Press ''${keyText("app.tools.expand")} to show full startup help' "compact splash help"
+      splash_forbid 'theme.fg("dim", `Pi can explain its own features' "splash help"
     '';
 
     constructFiles.generatedSettings = {
       relPath = "share/pi-wrapped/settings.json";
       content = builtins.toJSON (
-        {
-          defaultProjectTrust = "ask";
-          defaultThinkingLevel = config.pi.defaultThinkingLevel;
-          enableInstallTelemetry = false;
-          theme = config.pi.theme;
-          enabledModels = [
-            "openai-codex/gpt-5.6-terra"
-            "openai-codex/gpt-5.6-luna"
-            "openai-codex/gpt-5.6-sol"
-          ];
-          compaction = {
-            enabled = true;
-          };
-          hideThinkingBlock = false;
-          packages = config.pi.packages;
-          skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
-          prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
-          themes = [ resourceDirs.themes ] ++ resourcePackageResources "themes";
-          extensions =
-            bundledExtensionPaths
-            ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
-            ++ lib.optionals config.pi.camofoxBrowser.enable [
-              "${piResources}/share/pi-resources/extensions/camofox-browser.ts"
-            ]
-            ++ resourcePackageResources "extensions"
-            ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
-        }
-        // config.pi.settings
+        config.pi.settings
         // generatedDefaultModel
+        // lib.optionalAttrs (config.pi.defaultThinkingLevel != null) {
+          defaultThinkingLevel = config.pi.defaultThinkingLevel;
+        }
+        // lib.optionalAttrs (config.pi.theme != null) { theme = config.pi.theme; }
+        // lib.optionalAttrs (config.pi.enabledModels != [ ]) {
+          enabledModels = config.pi.enabledModels;
+        }
         // {
-          defaultProjectTrust = "ask";
+          defaultProjectTrust = config.pi.projectTrust;
           enableInstallTelemetry = false;
           packages = config.pi.packages;
           skills = [ resourceDirs.skills ] ++ resourcePackageResources "skills";
           prompts = [ resourceDirs.prompts ] ++ resourcePackageResources "prompts";
           themes = [ resourceDirs.themes ] ++ resourcePackageResources "themes";
-          extensions =
-            bundledExtensionPaths
-            ++ lib.optionals config.pi.gondolin.enable [ gondolinExtensionPath ]
-            ++ lib.optionals config.pi.camofoxBrowser.enable [
-              "${piResources}/share/pi-resources/extensions/camofox-browser.ts"
-            ]
-            ++ resourcePackageResources "extensions"
-            ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
+          extensions = generatedExtensions;
         }
       );
     };
@@ -684,7 +691,7 @@ in
 
         When spawning a new Pi process:
         - always use `PI_LAUNCHER_BIN` or `run-current-pi`
-        - never invoke `pi`, `p`, `p-minimal`, `p-sandboxed`, or any other launcher name directly
+        - never invoke `pi`, `${config.binName}`, or any other profile launcher name directly
         - if `PI_LAUNCHER_BIN` is unset, fail instead of guessing
 
         This applies to:
@@ -749,14 +756,15 @@ in
         profile_name=${lib.escapeShellArg config.pi.profileName}
         profile_dir="${config.pi.stateRoot}/$profile_name"
         mkdir -p "$profile_dir" "$profile_dir/sessions"
-        rm -f "$profile_dir/settings.json"
-        cp ${config.constructFiles.generatedSettings.path} "$profile_dir/settings.json"
-        rm -f "$profile_dir/keybindings.json"
-        cp ${config.constructFiles.generatedKeybindings.path} "$profile_dir/keybindings.json"
-        rm -f "$profile_dir/AGENTS.md"
-        cp ${config.constructFiles.generatedAgents.path} "$profile_dir/AGENTS.md"
-        rm -f "$profile_dir/APPEND_SYSTEM.md"
-        cp ${config.constructFiles.generatedAppendSystemPrompt.path} "$profile_dir/APPEND_SYSTEM.md"
+        copy_generated() {
+          rm -f "$profile_dir/$2"
+          cp "$1" "$profile_dir/$2"
+          chmod 0644 "$profile_dir/$2"
+        }
+        copy_generated ${config.constructFiles.generatedSettings.path} settings.json
+        copy_generated ${config.constructFiles.generatedKeybindings.path} keybindings.json
+        copy_generated ${config.constructFiles.generatedAgents.path} AGENTS.md
+        copy_generated ${config.constructFiles.generatedAppendSystemPrompt.path} APPEND_SYSTEM.md
         case "$0" in
           */*) launcher_candidate="$0" ;;
           *) launcher_candidate="$(command -v -- "$0" 2>/dev/null || true)" ;;
