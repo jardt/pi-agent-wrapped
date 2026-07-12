@@ -14,6 +14,62 @@ The repo has two layers:
   generic module with `lib.mkDefault`. The `p*` packages/apps and the profile
   home modules are built from this layer.
 
+## Which output should I consume?
+
+| Output | Layer | Use when |
+| --- | --- | --- |
+| `wrapperModules.pi`, `wrappers.pi`, `nixosModules.pi`, `homeModules.pi` | generic | You want a clean Pi wrapper and your own configuration |
+| `wrapperModules.personal`, `wrappers.personal`, `nixosModules.personal`, `homeModules.personal` | personal | You want the author's predefined setup |
+| every `default` alias, `packages.p*`, `apps.*`, `homeModules.minimal`, `homeModules.camofoxBrowser` | personal | Same — `default` always means the personal preset |
+
+If you are not the author, consume the `pi` outputs. The generic module ships
+**neutral defaults**: no default model, theme, keybindings, skills, or
+extensions, and every integration disabled. Anything you don't set is omitted
+from the generated `settings.json`, so plain Pi behavior applies. Do not use
+`default`/`personal` outputs unless you explicitly want the personal
+configuration (specific OpenAI Codex models, gruvbox theme, Herdr integration,
+extra skills, and so on).
+
+### Build your own profile on the generic module
+
+Set options directly at `wrap` time:
+
+```nix
+inputs.pi-agent-wrapped.wrappers.pi.wrap {
+  inherit pkgs;
+  pi.defaultModel = "anthropic/claude-sonnet-5";
+}
+```
+
+Or keep a reusable profile module and extend the generic wrapper with it —
+this is exactly how the bundled personal preset and profiles are built:
+
+```nix
+# my-pi-profile.nix
+{
+  binName = "my-pi";
+  pi = {
+    profileName = "my-pi";
+    defaultModel = "anthropic/claude-sonnet-5";
+    theme = "dark";
+    localSkills = [ "commit" "github" ];
+    bundledExtensions = [ "context" "multi-edit" ];
+    fff.enable = true;
+  };
+}
+```
+
+```nix
+myPi =
+  (inputs.pi-agent-wrapped.wrappers.pi.extendModules {
+    modules = [ ./my-pi-profile.nix ];
+  }).config.wrap
+    { inherit pkgs; };
+```
+
+You can also re-export your extended module from your own flake as a
+`wrapperModules.*` output, the same way this flake exports `personal`.
+
 ## Run (personal packages)
 
 ```bash
