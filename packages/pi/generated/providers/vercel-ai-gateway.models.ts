@@ -522,7 +522,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true},
 		reasoning: true,
-		thinkingLevelMap: {"off":null,"xhigh":"xhigh"},
+		thinkingLevelMap: {"off":null,"xhigh":"xhigh","max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 10,
@@ -565,7 +565,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 			cacheWrite: 18.75,
 		},
 		contextWindow: 200000,
-		maxTokens: 32000,
+		maxTokens: 8192,
 	} satisfies Model<"anthropic-messages">,
 	"anthropic/claude-opus-4.1": {
 		id: "anthropic/claude-opus-4.1",
@@ -609,7 +609,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true},
 		reasoning: true,
-		thinkingLevelMap: {"xhigh":"max"},
+		thinkingLevelMap: {"max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 5,
@@ -628,7 +628,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true,"supportsTemperature":false},
 		reasoning: true,
-		thinkingLevelMap: {"xhigh":"xhigh"},
+		thinkingLevelMap: {"xhigh":"xhigh","max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 5,
@@ -647,7 +647,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true,"supportsTemperature":false},
 		reasoning: true,
-		thinkingLevelMap: {"xhigh":"xhigh"},
+		thinkingLevelMap: {"xhigh":"xhigh","max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 5,
@@ -673,7 +673,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 			cacheWrite: 3.75,
 		},
 		contextWindow: 1000000,
-		maxTokens: 64000,
+		maxTokens: 8192,
 	} satisfies Model<"anthropic-messages">,
 	"anthropic/claude-sonnet-4.5": {
 		id: "anthropic/claude-sonnet-4.5",
@@ -700,6 +700,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true},
 		reasoning: true,
+		thinkingLevelMap: {"max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 3,
@@ -718,6 +719,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		baseUrl: "https://ai-gateway.vercel.sh",
 		compat: {"forceAdaptiveThinking":true},
 		reasoning: true,
+		thinkingLevelMap: {"xhigh":"xhigh","max":"max"},
 		input: ["text", "image"],
 		cost: {
 			input: 2,
@@ -873,12 +875,12 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		reasoning: true,
 		input: ["text"],
 		cost: {
-			input: 0.6,
-			output: 1.7,
-			cacheRead: 0,
+			input: 0.21,
+			output: 0.79,
+			cacheRead: 0.13,
 			cacheWrite: 0,
 		},
-		contextWindow: 128000,
+		contextWindow: 163840,
 		maxTokens: 128000,
 	} satisfies Model<"anthropic-messages">,
 	"deepseek/deepseek-v3.1-terminus": {
@@ -943,7 +945,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		cost: {
 			input: 0.14,
 			output: 0.28,
-			cacheRead: 0.0028,
+			cacheRead: 0.028,
 			cacheWrite: 0,
 		},
 		contextWindow: 1000000,
@@ -1204,6 +1206,23 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		contextWindow: 1000000,
 		maxTokens: 32000,
 	} satisfies Model<"anthropic-messages">,
+	"kwaipilot/kat-coder-air-v2.5": {
+		id: "kwaipilot/kat-coder-air-v2.5",
+		name: "Kat Coder Air V2.5",
+		api: "anthropic-messages",
+		provider: "vercel-ai-gateway",
+		baseUrl: "https://ai-gateway.vercel.sh",
+		reasoning: true,
+		input: ["text"],
+		cost: {
+			input: 0.15,
+			output: 0.6,
+			cacheRead: 0.03,
+			cacheWrite: 0,
+		},
+		contextWindow: 256000,
+		maxTokens: 80000,
+	} satisfies Model<"anthropic-messages">,
 	"kwaipilot/kat-coder-pro-v1": {
 		id: "kwaipilot/kat-coder-pro-v1",
 		name: "KAT-Coder-Pro V1",
@@ -1237,6 +1256,23 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		},
 		contextWindow: 256000,
 		maxTokens: 256000,
+	} satisfies Model<"anthropic-messages">,
+	"kwaipilot/kat-coder-pro-v2.5": {
+		id: "kwaipilot/kat-coder-pro-v2.5",
+		name: "Kat Coder Pro V2.5",
+		api: "anthropic-messages",
+		provider: "vercel-ai-gateway",
+		baseUrl: "https://ai-gateway.vercel.sh",
+		reasoning: true,
+		input: ["text"],
+		cost: {
+			input: 0.74,
+			output: 2.96,
+			cacheRead: 0.15,
+			cacheWrite: 0,
+		},
+		contextWindow: 256000,
+		maxTokens: 80000,
 	} satisfies Model<"anthropic-messages">,
 	"meituan/longcat-flash-chat": {
 		id: "meituan/longcat-flash-chat",
@@ -1398,7 +1434,7 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		provider: "vercel-ai-gateway",
 		baseUrl: "https://ai-gateway.vercel.sh",
 		reasoning: true,
-		input: ["text"],
+		input: ["text", "image"],
 		cost: {
 			input: 1.25,
 			output: 4.25,
@@ -3268,9 +3304,9 @@ export const VERCEL_AI_GATEWAY_MODELS = {
 		reasoning: true,
 		input: ["text"],
 		cost: {
-			input: 3,
-			output: 10.25,
-			cacheRead: 0.5,
+			input: 2.1,
+			output: 6.6,
+			cacheRead: 0.21,
 			cacheWrite: 0,
 		},
 		contextWindow: 1000000,

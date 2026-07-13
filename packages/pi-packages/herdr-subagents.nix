@@ -6,7 +6,7 @@
 
 buildNpmPackage {
   pname = "pi-herdr-subagents";
-  version = "0.2.0";
+  version = "0.3.0";
 
   inherit src;
 
@@ -23,7 +23,7 @@ buildNpmPackage {
         $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-tui/-/pi-tui-0.80.3.tgz",\n      "integrity": "sha512-2BJI6qwRQfnM0Q7seL1+SbacU/jRRjBnN7Hu3n9BjAn7/s5FaBNnvdD1qBQYRsFTHfjqMaDsjYqanPyqwXj99w==",\n      "dev": true,'
   '';
 
-  npmDepsHash = "sha256-L4Vqyimc5/awqQoDxLQtZTosuluaduCpwpTuw82nwHU=";
+  npmDepsHash = "sha256-71/x2azh3IaNC91vIvzG77VTb5zVWR6Ngy1nkugzJ5U=";
   npmDepsFetcherVersion = 2;
 
   buildPhase = ''

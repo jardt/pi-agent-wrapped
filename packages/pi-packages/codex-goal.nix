@@ -6,29 +6,29 @@
 
 buildNpmPackage rec {
   pname = "pi-package-codex-goal";
-  version = "0.1.34";
+  version = "0.1.35";
 
   src = fetchFromGitHub {
     owner = "fitchmultz";
     repo = "pi-codex-goal";
-    rev = "3f35ae27341f27ddd946e9ce36e0a4eb2530cb95";
-    hash = "sha256-cUWLBZ/Vy/ByJQBQuCe+adi/piS/UEKEVCFQsQWp+UQ=";
+    rev = "b9630acef7a24fea5b7a695f68d1a410df25337b";
+    hash = "sha256-jTyoZFwoh+4SVVFUH4Se5iCeMJgJVI4N4TfBQQH6Nyc=";
   };
 
   postPatch = ''
     substituteInPlace package-lock.json \
       --replace-fail \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-agent-core/-/pi-agent-core-0.80.3.tgz",\n      "dev": true,' \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-agent-core/-/pi-agent-core-0.80.3.tgz",\n      "integrity": "sha512-3qw0/GeRQBU/nlGjDe5Yb7ePKTmoxefx2YxyKMFAviFUMXpFexBG/hS7mBtwFahFvzrrTPPoRT6sFIDjwoDWPQ==",\n      "dev": true,' \
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-agent-core/-/pi-agent-core-0.80.6.tgz",\n      "dev": true,' \
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-agent-core/-/pi-agent-core-0.80.6.tgz",\n      "integrity": "sha512-Lvn89ko42h5ETUb6Z0Ku6ldskEqXaTdQBYvSa0+7bdG9V6rUEpXptv5e0OVZ1HDcvi8s6/2lGCQWsxKX+DFHNw==",\n      "dev": true,' \
       --replace-fail \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-ai/-/pi-ai-0.80.3.tgz",\n      "dev": true,' \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-ai/-/pi-ai-0.80.3.tgz",\n      "integrity": "sha512-jPZLMeGL5kkMSEAwAklfXTMHqZvfhsJtCCpKGIr5Duk7mc0n4skjB1dugk7y0z3z8ZHIUCmPAWHdyDqgUz5vdA==",\n      "dev": true,' \
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-ai/-/pi-ai-0.80.6.tgz",\n      "dev": true,' \
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-ai/-/pi-ai-0.80.6.tgz",\n      "integrity": "sha512-7xfLk8sANBp+bpPEbjoOZTbPxsa+++b1JXAoSJsNa3vbs9AHHEclmvg54XLQcxH+fuwaeti/g2jeIfJ+mVYLpA==",\n      "dev": true,' \
       --replace-fail \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-tui/-/pi-tui-0.80.3.tgz",\n      "dev": true,' \
-        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-tui/-/pi-tui-0.80.3.tgz",\n      "integrity": "sha512-2BJI6qwRQfnM0Q7seL1+SbacU/jRRjBnN7Hu3n9BjAn7/s5FaBNnvdD1qBQYRsFTHfjqMaDsjYqanPyqwXj99w==",\n      "dev": true,'
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-tui/-/pi-tui-0.80.6.tgz",\n      "dev": true,' \
+        $'"resolved": "https://registry.npmjs.org/@earendil-works/pi-tui/-/pi-tui-0.80.6.tgz",\n      "integrity": "sha512-bSuzS4EVSqEPj/Qr/p9eqCESfKsGuDNbl77EGci8Iaqqt/C/XCBZL1MjXaxSWW1NsT5afjp/Cb0NTPzOLv/aPA==",\n      "dev": true,'
   '';
 
-  npmDepsHash = "sha256-K7zFnq1DEeGSEjFAZL9qZ8COTvWUDpErfqC/jxXI0mQ=";
+  npmDepsHash = "sha256-YdsrseeDT5YVzya/mRx3pLufPt/DI/s4XQufhw0p4p0=";
   npmDepsFetcherVersion = 2;
 
   buildPhase = ''
