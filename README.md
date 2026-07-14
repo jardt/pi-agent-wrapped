@@ -132,7 +132,7 @@ generated `settings.json` so Pi's own defaults apply):
   `APPEND_SYSTEM.md`
 - `pi.splash.*`: launch splash text
 - Integrations, each opt-in: `pi.fff`, `pi.dynamicWorkflows`, `pi.goal`,
-  `pi.herdrIntegration`, `pi.herdrSubagents`, `pi.mattPocockSkills`
+  `pi.herdrIntegration`, `pi.mattPocockSkills`
   (note: its default skill list uses import-from-derivation),
   `pi.camofoxBrowser`, `pi.gondolin`, `pi.cheapModels`, `pi.librarian.mode`
 
