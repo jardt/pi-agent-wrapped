@@ -17,6 +17,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { compact, generateBranchSummary } from "@earendil-works/pi-coding-agent";
+import { streamSimple } from "@earendil-works/pi-ai/compat";
 import { resolveCheapModel } from "./lib/model-selection";
 
 export default function (pi: ExtensionAPI) {
@@ -38,7 +39,7 @@ export default function (pi: ExtensionAPI) {
 
 		const { config, model, apiKey, headers } = selected;
 		ctx.ui.notify(
-			`Summarizing abandoned /tree branch with ${config.provider}/${config.id} (${preparation.entriesToSummarize.length} entries)...`,
+			`Summarizing abandoned /tree branch with ${config.provider}/${config.id}:${config.thinkingLevel} (${preparation.entriesToSummarize.length} entries)...`,
 			"info",
 		);
 
@@ -49,7 +50,14 @@ export default function (pi: ExtensionAPI) {
 				headers,
 				signal,
 				reserveTokens: config.reserveTokens ?? 16384,
-				streamFn,
+				streamFn: (model, context, options) => {
+					const lowReasoningOptions = model.reasoning
+						? { ...options, reasoning: config.thinkingLevel }
+						: options;
+					return streamFn
+						? streamFn(model, context, lowReasoningOptions)
+						: streamSimple(model, context, lowReasoningOptions);
+				},
 			});
 
 			if (result.aborted) return { cancel: true };
@@ -86,10 +94,21 @@ export default function (pi: ExtensionAPI) {
 		}
 
 		const { config, model, apiKey, headers } = selected;
-		ctx.ui.notify(`Compacting session with ${config.provider}/${config.id}...`, "info");
+		ctx.ui.notify(
+			`Compacting session with ${config.provider}/${config.id}:${config.thinkingLevel}...`,
+			"info",
+		);
 
 		try {
-			const result = await compact(preparation, model, apiKey, headers, customInstructions, signal);
+			const result = await compact(
+				preparation,
+				model,
+				apiKey,
+				headers,
+				customInstructions,
+				signal,
+				config.thinkingLevel,
+			);
 			return { compaction: result };
 		} catch (error) {
 			const message = error instanceof Error ? error.message : String(error);

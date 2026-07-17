@@ -1,12 +1,17 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-type ModelConfig = {
+type ParsedModelRef = {
 	provider: string;
 	id: string;
+};
+
+type ModelConfig = ParsedModelRef & {
+	thinkingLevel: "low";
 	reserveTokens?: number;
 };
 
-const DEFAULT_CHEAP_MODEL = "openai-codex/gpt-5.6-luna";
+const DEFAULT_CHEAP_MODEL = "openai-codex/gpt-5.6-terra";
+const DEFAULT_CHEAP_THINKING_LEVEL = "low" as const;
 const DEFAULT_CHEAP_FALLBACK_MODELS = [
 	"github-copilot/gpt-5.4-mini",
 	"anthropic/claude-haiku-4-5",
@@ -16,7 +21,7 @@ const DEFAULT_CHEAP_FALLBACK_MODELS = [
 	"github-copilot/gpt-5.5",
 ].join(",");
 
-function parseModelRef(value: string): ModelConfig | null {
+function parseModelRef(value: string): ParsedModelRef | null {
 	const trimmed = value.trim();
 	if (!trimmed) return null;
 
@@ -31,7 +36,7 @@ function parseModelRef(value: string): ModelConfig | null {
 }
 
 function normalizeModelArg(raw: string): string {
-	return raw.includes(":") ? raw : `${raw}:medium`;
+	return raw.includes(":") ? raw : `${raw}:${DEFAULT_CHEAP_THINKING_LEVEL}`;
 }
 
 function splitList(value: string): string[] {
@@ -87,6 +92,7 @@ export async function resolveCheapModel(
 		return {
 			config: {
 				...config,
+				thinkingLevel: DEFAULT_CHEAP_THINKING_LEVEL,
 				reserveTokens: options?.reserveTokens,
 			},
 			model,

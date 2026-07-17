@@ -149,16 +149,16 @@ nix build .#pi --allow-import-from-derivation
 
 ## Cheap model fallbacks
 
-`extensions/model-selection.ts` contains the shared default cheap-model fallback
-list used by:
+`extensions/lib/model-selection.ts` contains the shared default cheap-model
+and fallback list used by:
 
 - `extensions/explore.ts`
 - `extensions/tree-summary-model.ts` for `/tree` summaries
 - `extensions/tree-summary-model.ts` for session compaction
 
-Current defaults prefer OpenAI Codex first, then GitHub Copilot, with Claude
-Haiku as an early cheap fallback. If any of these model ids change upstream,
-update the defaults in `extensions/model-selection.ts` and rebuild
+The default is OpenAI Codex Terra at low reasoning, followed by GitHub Copilot,
+with Claude Haiku as an early cheap fallback. If any of these model ids change
+upstream, update the defaults in `extensions/lib/model-selection.ts` and rebuild
 `.#pi-resources`.
 
 Wrapper users can also set shared cheap-model env vars declaratively through:
