@@ -28,16 +28,16 @@ buildNpmPackage rec {
   src = fetchFromGitHub {
     owner = "dmtrKovalenko";
     repo = "fff";
-    rev = "44a5b259570730a4236ecbf06673d43ef7b2263e";
-    hash = "sha256-TfXlPzdGHvDrXWD2S24UgwkUAMGHR8w5FeWhW4h1tWs=";
+    rev = "b14c31d137e108b7c520d0d9e0b0017a1a88141d";
+    hash = "sha256-mD0dKKYOtg9qsx5nNepeocQS1HPRWfNcnWM4oQdJ1Ok=";
   };
 
-  npmDepsHash = "sha256-pxpTm252ZSu+E5JeJvUkljbMuwE7trnyX4d7/1ZWh9U=";
+  npmDepsHash = "sha256-SmE7bx3z94hK970k7DzG6O8+iq0xKMNFRoiWYlNO5ME=";
   npmDepsFetcherVersion = 2;
 
   cargoDeps = rustPlatform.fetchCargoVendor {
     inherit src;
-    hash = "sha256-QxEp8Cw45SywJRoCPZayC6MnK/wSN2Bk6PIZ/8NqEk4=";
+    hash = "sha256-Nlf2Bxwe5KvZF0unpeK/mMFmv4NM+IKPpFOopXoNRxU=";
   };
 
   nativeBuildInputs = [
