@@ -42,6 +42,31 @@ type ToolCtx = Parameters<
 >[4];
 type AnyParams = Record<string, any>;
 
+const CAMOFOX_LOADER_TOOL = "search_camofox_tools";
+const CAMOFOX_EAGER_TOOLS = new Set([
+  "camofox_create_tab",
+  "camofox_list_tabs",
+  "camofox_snapshot",
+]);
+const CAMOFOX_TOOL_KEYWORDS: Record<string, string> = {
+  camofox_click: "interact activate press select link button",
+  camofox_type: "interact input fill enter keyboard form",
+  camofox_navigate: "url search macro visit open",
+  camofox_go_back: "history previous navigation",
+  camofox_go_forward: "history next navigation",
+  camofox_refresh: "reload navigation",
+  camofox_scroll: "page move up down left right",
+  camofox_screenshot: "image visual capture png",
+  camofox_close_tab: "delete remove tab",
+  camofox_console: "debug logs messages javascript",
+  camofox_errors: "debug failures exceptions page",
+  camofox_console_clear: "debug reset logs errors",
+  camofox_trace_start: "debug playwright recording begin",
+  camofox_trace_stop: "debug playwright recording finish save",
+  camofox_import_cookies: "authentication login session netscape cookies",
+};
+const CAMOFOX_LAZY_TOOLS = new Set(Object.keys(CAMOFOX_TOOL_KEYWORDS));
+
 function currentSessionId(ctx: ToolCtx) {
   return ctx.sessionManager?.getSessionId?.();
 }
@@ -491,4 +516,55 @@ export default function camofoxBrowser(pi: ExtensionAPI) {
       return textResult({ imported: cookies.length, userId: uid, result: r });
     },
   );
+
+  pi.registerTool({
+    name: CAMOFOX_LOADER_TOOL,
+    label: "Search Camofox Tools",
+    description:
+      "Search for and enable additional Camofox browser tools, such as interaction, navigation, screenshots, debugging, tracing, and cookie import.",
+    promptSnippet:
+      "Use search_camofox_tools to enable additional browser operations when the active Camofox tools cannot perform the next step.",
+    parameters: Type.Object({
+      query: Type.String({ description: "Browser capability or operation to find" }),
+      limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 10 })),
+    }),
+    async execute(_id, params) {
+      const terms = params.query
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((term) => term.length > 1 && !["and", "browser", "camofox", "for", "the", "tool", "tools", "with"].includes(term));
+      const matches = pi.getAllTools()
+        .filter((tool) => CAMOFOX_LAZY_TOOLS.has(tool.name))
+        .map((tool) => ({
+          name: tool.name,
+          score: terms.reduce((score, term) => {
+            const haystack = `${tool.name} ${tool.description} ${CAMOFOX_TOOL_KEYWORDS[tool.name] ?? ""}`.toLowerCase();
+            const words = haystack.split(/[^a-z0-9]+/).filter(Boolean);
+            return score + (words.some((word) => word.startsWith(term) || term.startsWith(word)) ? 1 : 0);
+          }, 0),
+        }))
+        .filter((match) => match.score > 0)
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, params.limit ?? 5)
+        .map((match) => match.name);
+
+      if (matches.length === 0) {
+        return textResult(`No Camofox tools found for: ${params.query}`);
+      }
+
+      const active = pi.getActiveTools();
+      const added = matches.filter((name) => !active.includes(name));
+      pi.setActiveTools([...new Set([...active, ...added])]);
+      return textResult(
+        added.length > 0
+          ? `Loaded Camofox tools: ${added.join(", ")}`
+          : `Matching Camofox tools already active: ${matches.join(", ")}`,
+      );
+    },
+  });
+
+  pi.on("session_start", () => {
+    const active = pi.getActiveTools().filter((name) => !CAMOFOX_LAZY_TOOLS.has(name));
+    pi.setActiveTools([...new Set([...active, ...CAMOFOX_EAGER_TOOLS, CAMOFOX_LOADER_TOOL])]);
+  });
 }
