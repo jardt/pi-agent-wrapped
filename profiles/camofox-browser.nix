@@ -9,7 +9,20 @@
       "herdr"
       "librarian"
     ];
+    bundledExtensions = [
+      "better-openai"
+      "clanker-working-messages"
+      "context"
+      "explore"
+      "host-statusline"
+      "librarian"
+      "multi-edit"
+      "split-fork"
+      "tree-summary-model"
+    ];
     fff.enable = false;
+    dynamicWorkflows.enable = false;
+    goal.enable = false;
     mattPocockSkills.enable = false;
     camofoxBrowser = {
       enable = true;
