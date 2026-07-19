@@ -22,32 +22,35 @@ run-current-pi --session /path/to/session.jsonl
 herdr pane run "$PANE" "run-current-pi --session '/path/to/session.jsonl'"
 ```
 
-## Generic vs personal layering
+## Generic package boundary
 
-This repo has two layers; keep them separate:
+This repository is a generic public Pi wrapper. Keep all defaults neutral: no personal models, themes, keybindings, skills, prompts, named profiles, endpoints, secrets, or third-party integrations enabled by default.
 
-- `module.nix` is the generic public wrapper module. All defaults must stay neutral: no personal models, themes, keybindings, skills, or third-party integrations enabled by default. New options belong here with off/empty defaults.
-- `presets/personal.nix` carries the personal configuration, applied with `lib.mkDefault` so profiles and consumers can override it. Personal opinions go here, never into `module.nix` defaults.
+Reusable capabilities belong here: wrapper options, package builders, bundled resources, integrations, `lib.mkProfile`, and the generic multi-profile Home Manager module. Concrete profiles and personal presets belong in the consumer repository.
 
-Flake outputs follow the same split: `wrapperModules.pi` / `wrappers.pi` / `nixosModules.pi` / `homeModules.pi` are generic; the `personal` variants (and the `p*` packages/apps and profile home modules) build on the preset.
+All default flake aliases must remain generic. Neutral examples and test fixtures are allowed, but do not export them as opinionated named profiles.
 
 ## Pi profile packaging model
 
-Profiles must be independently installable. Do not make an optional profile mutate or replace the default `p` wrapper; users may install many profile launchers side-by-side.
+Profiles must be independently evaluated and installable. `lib.mkProfile` is the package boundary: it accepts downstream wrapper modules and produces a launcher-only package so multiple profiles do not collide on Pi's underlying binaries.
 
-Keep consumer config simple. Put wrapper/buildEnv collision avoidance inside this repo, preferably behind `homeModules.<profile>` or `packages.<profile>` outputs.
+`homeModules.pi` maps arbitrary `programs.piWrapped.profiles` entries through that factory. Keep the profile option generic; use deferred wrapper modules instead of duplicating the `pi.*` option schema in the Home Manager module.
+
+Profiles may expose aliases, but launcher names and mutable `profileName` values must be unique. An optional profile must never mutate or replace another profile.
 
 Example consumer shape:
 
 ```nix
-imports = [ inputs.pi-agent-wrapped.homeModules.camofoxBrowser ];
+imports = [ inputs.pi-agent-wrapped.homeModules.pi ];
 
-piProfiles.camofoxBrowser.enable = true;
-```
-
-Expected launch style:
-
-```sh
-p          # default profile
-p-camofox  # Camofox profile
+programs.piWrapped = {
+  enable = true;
+  sharedModules = [ ./pi/base.nix ];
+  profiles.main = {
+    profileName = "default";
+    binName = "p";
+    aliases = [ "pi" ];
+    modules = [ ./pi/main.nix ];
+  };
+};
 ```

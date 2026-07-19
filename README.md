@@ -1,94 +1,135 @@
-# pi-wrapped-module
+# pi-agent-wrapped
 
-Declarative [Pi](https://github.com/earendil-works/pi) coding-agent setup packaged with
+Declarative [Pi](https://github.com/earendil-works/pi) coding-agent wrappers packaged with
 [`nix-wrapper-modules`](https://github.com/BirdeeHub/nix-wrapper-modules).
 
-The repo has two layers:
+This flake provides mechanisms, not personal agents:
 
-- **Generic module** (`module.nix`, exposed as `wrapperModules.pi`): a
-  wrapper module with neutral defaults. It provides simple `pi.*` options for
-  models, theme, keybindings, skills, extensions, prompts, and optional
-  third-party integrations — all off/empty by default.
-- **Personal preset** (`presets/personal.nix`, exposed as
-  `wrapperModules.personal`): my predefined Pi configuration layered on the
-  generic module with `lib.mkDefault`. The `p*` packages/apps and the profile
-  home modules are built from this layer.
+- a neutral wrapper module with options for Pi settings and integrations
+- the source-built Pi package and bundled resource packages
+- `lib.mkProfile`, which builds an isolated launcher-only profile package
+- a Home Manager module for declaring any number of downstream profiles
 
-## Which output should I consume?
+Concrete profiles, model choices, prompts, endpoints, and secrets belong in the
+consumer's configuration. All defaults and default flake aliases are neutral.
 
-| Output | Layer | Use when |
-| --- | --- | --- |
-| `wrapperModules.pi`, `wrappers.pi`, `nixosModules.pi`, `homeModules.pi` | generic | You want a clean Pi wrapper and your own configuration |
-| `wrapperModules.personal`, `wrappers.personal`, `nixosModules.personal`, `homeModules.personal` | personal | You want the author's predefined setup |
-| every `default` alias, `packages.p*`, `apps.*`, `homeModules.minimal`, `homeModules.camofoxBrowser` | personal | Same — `default` always means the personal preset |
+## Outputs
 
-If you are not the author, consume the `pi` outputs. The generic module ships
-**neutral defaults**: no default model, theme, keybindings, skills, or
-extensions, and every integration disabled. Anything you don't set is omitted
-from the generated `settings.json`, so plain Pi behavior applies. Do not use
-`default`/`personal` outputs unless you explicitly want the personal
-configuration (specific OpenAI Codex models, gruvbox theme, Herdr integration,
-extra skills, and so on).
+| Output | Purpose |
+| --- | --- |
+| `wrapperModules.pi` / `wrapperModules.default` | Generic nix-wrapper-modules module |
+| `wrappers.pi` / `wrappers.default` | Evaluated generic wrapper configuration |
+| `lib.mkProfile` | Build one independently evaluated launcher-only profile package |
+| `homeModules.pi` / `homeModules.default` | Generic Home Manager multi-profile module |
+| `homeModules.wrapper` | Low-level single-wrapper install module |
+| `nixosModules.pi` / `nixosModules.default` | Low-level generic wrapper install module |
+| `packages.<system>.p` | Neutral wrapped Pi launcher |
+| `packages.<system>.pi-wrapped` | Full neutral wrapper package |
+| `packages.<system>.pi` | Unwrapped source-built Pi package |
 
-### Build your own profile on the generic module
+`homeManagerModules` is an alias of `homeModules` for consumers that prefer the
+conventional output name.
 
-Set options directly at `wrap` time:
+## Profile factory
+
+`lib.mkProfile` accepts arbitrary wrapper modules and creates a package exposing
+only the requested launcher names. The full wrapped package is available as the
+result's `passthru.fullPackage`.
 
 ```nix
-inputs.pi-agent-wrapped.wrappers.pi.wrap {
+myPi = inputs.pi-agent-wrapped.lib.mkProfile {
   inherit pkgs;
-  pi.defaultModel = "anthropic/claude-sonnet-5";
-}
+  profileName = "openrouter";
+  binName = "p-openrouter";
+  aliases = [ ];
+  modules = [
+    ./pi/base.nix
+    ./pi/openrouter.nix
+  ];
+};
 ```
 
-Or keep a reusable profile module and extend the generic wrapper with it —
-this is exactly how the bundled personal preset and profiles are built:
+A profile module uses the normal wrapper option schema:
 
 ```nix
-# my-pi-profile.nix
+# pi/openrouter.nix
 {
-  binName = "my-pi";
   pi = {
-    profileName = "my-pi";
-    defaultModel = "anthropic/claude-sonnet-5";
-    theme = "dark";
-    localSkills = [ "commit" "github" ];
-    bundledExtensions = [ "context" "multi-edit" ];
+    defaultModel = "openrouter/anthropic/claude-sonnet-4.5";
+    enabledModels = [
+      "openrouter/anthropic/claude-sonnet-4.5"
+      "openrouter/google/gemini-2.5-pro"
+    ];
     fff.enable = true;
   };
 }
 ```
 
+The factory forces `binName` and `pi.profileName` from its arguments so package
+identity and mutable state isolation cannot accidentally diverge from the
+consumer declaration.
+
+## Home Manager profiles
+
+Import the generic module and declare as many independently evaluated profiles
+as needed:
+
 ```nix
-myPi =
-  (inputs.pi-agent-wrapped.wrappers.pi.extendModules {
-    modules = [ ./my-pi-profile.nix ];
-  }).config.wrap
-    { inherit pkgs; };
+{
+  imports = [ inputs.pi-agent-wrapped.homeModules.pi ];
+
+  programs.piWrapped = {
+    enable = true;
+
+    sharedModules = [
+      ./pi/base.nix
+    ];
+
+    profiles = {
+      main = {
+        profileName = "default";
+        binName = "p";
+        aliases = [ "pi" ];
+        modules = [ ./pi/main.nix ];
+      };
+
+      openrouter = {
+        binName = "p-openrouter";
+        modules = [ ./pi/openrouter.nix ];
+      };
+
+      browser = {
+        binName = "p-browser";
+        modules = [
+          ./pi/browser.nix
+          {
+            pi.camofoxBrowser.apiKeyFile = config.sops.secrets.camofox.path;
+          }
+        ];
+      };
+    };
+  };
+}
 ```
 
-You can also re-export your extended module from your own flake as a
-`wrapperModules.*` output, the same way this flake exports `personal`.
+Profile defaults:
 
-## Run (personal packages)
+- `profileName`: profile attribute name
+- `binName`: `p-<profile attribute name>`
+- `aliases`: empty
+- `enable`: true
+- `modules`: empty
 
-```bash
-nix run .#p
-```
+`sharedModules` are evaluated before each profile's own modules. Modules use
+`lib.types.deferredModule`, so the Home Manager interface does not duplicate or
+drift from the wrapper's `pi.*` option schema.
 
-Available flake outputs:
+Enabled profiles must have globally unique launcher names and mutable
+`profileName` values.
 
-- `.#p`: personal wrapper package exposing only `bin/p`
-- `.#p-minimal`: personal minimal profile exposing only `bin/p-minimal`
-- `.#pi-wrapped`: full wrapped personal Pi package
-- `.#pi`: unwrapped source-built Pi
+## Direct generic wrapper use
 
-Use `.#p` when you want the wrapped launcher without colliding with another Pi
-package that already provides `bin/pi`.
-
-## Use the generic module
-
-As a standalone package:
+Set options at wrap time:
 
 ```nix
 inputs.pi-agent-wrapped.wrappers.pi.wrap {
@@ -103,112 +144,57 @@ inputs.pi-agent-wrapped.wrappers.pi.wrap {
 }
 ```
 
-Via NixOS / home-manager / nix-darwin (installs only the launcher binary):
+Or extend the evaluated module yourself:
 
 ```nix
-# generic
-imports = [ inputs.pi-agent-wrapped.homeModules.pi ];
-# or the personal preset
-imports = [ inputs.pi-agent-wrapped.homeModules.personal ];
-
-wrappers.pi.enable = true;
-wrappers.pi.pi.defaultModel = "anthropic/claude-sonnet-5";
+(inputs.pi-agent-wrapped.wrappers.pi.extendModules {
+  modules = [ ./my-pi-profile.nix ];
+}).config.wrap { inherit pkgs; }
 ```
 
-Selected `pi.*` options (all optional; unset keys are omitted from the
-generated `settings.json` so Pi's own defaults apply):
+## Selected wrapper options
 
-- `pi.defaultModel`: fully-qualified `provider/model` id, split into
-  `defaultProvider`/`defaultModel`
+All are optional; unset settings are omitted so Pi's own defaults apply.
+
+- `pi.defaultModel`: fully-qualified `provider/model` identifier
 - `pi.enabledModels`: model allowlist
-- `pi.defaultThinkingLevel`: `off`..`xhigh`
-- `pi.theme`, `pi.keybindings`, `pi.settings` (free-form extra settings;
-  generated keys are reserved)
-- `pi.projectTrust`: written as `defaultProjectTrust` (default `"ask"`)
-- `pi.profileName`, `pi.stateRoot`: mutable profile isolation
-- `pi.localSkills`, `pi.bundledExtensions`: repo-bundled skills/extensions
-- `pi.resourcePackages`, `pi.packages`: Nix-built and runtime Pi packages
-- `pi.appendSystemPrompt` / `pi.overrideSystemPrompt`: profile-local
-  `APPEND_SYSTEM.md`
-- `pi.splash.*`: launch splash text
-- Integrations, each opt-in: `pi.fff`, `pi.dynamicWorkflows`, `pi.goal`,
-  `pi.herdrIntegration`, `pi.mattPocockSkills`
-  (note: its default skill list uses import-from-derivation),
-  `pi.camofoxBrowser`, `pi.gondolin`, `pi.cheapModels`, `pi.librarian.mode`
+- `pi.defaultThinkingLevel`: `off` through `xhigh`
+- `pi.theme`, `pi.keybindings`, `pi.settings`
+- `pi.projectTrust`: generated as `defaultProjectTrust`
+- `pi.profileName`, `pi.stateRoot`: mutable state isolation
+- `pi.localSkills`, `pi.bundledExtensions`
+- `pi.resourcePackages`, `pi.packages`
+- `pi.appendSystemPrompt`, `pi.overrideSystemPrompt`
+- `pi.splash.*`
+- opt-in integrations under `pi.fff`, `pi.dynamicWorkflows`, `pi.goal`,
+  `pi.herdrIntegration`, `pi.mattPocockSkills`, `pi.camofoxBrowser`,
+  `pi.gondolin`, `pi.cheapModels`, and `pi.librarian`
 
-## Personal profiles
+## Runtime state and launcher identity
 
-Home-manager modules for standalone profile launchers built on the personal
-preset:
-
-```nix
-imports = [
-  inputs.pi-agent-wrapped.homeModules.minimal
-  inputs.pi-agent-wrapped.homeModules.camofoxBrowser
-];
-
-piProfiles.minimal.enable = true;        # bin/p-minimal
-piProfiles.camofoxBrowser.enable = true; # bin/p-camofox
-```
-
-## State
-
-Runtime state is isolated from normal Pi and stored at:
+Each profile stores mutable state under:
 
 ```text
 ${XDG_STATE_HOME:-$HOME/.local/state}/pi-wrapped/<profileName>
 ```
 
-The default wrapper executable is named `p`. It sets:
+The launcher sets:
 
-- `PI_LAUNCHER_BIN` to the canonical immutable path of the currently running wrapper binary; child Pi processes must reuse this exact launcher
+- `PI_LAUNCHER_BIN` to the canonical immutable path of the active wrapper
 - `PI_CODING_AGENT_DIR`
 - `PI_PACKAGE_DIR`
 - `PI_CODING_AGENT_SESSION_DIR`
 - `PI_SKIP_VERSION_CHECK=1`
 - `PI_TELEMETRY=0`
 
-Each profile also gets its own generated `AGENTS.md` inside `PI_CODING_AGENT_DIR`, so profile-specific agent instructions follow the active wrapped launcher. `run-current-pi` fails closed unless `PI_LAUNCHER_BIN` is an absolute, canonical, executable file.
+Pi-native child processes must reuse the exact `PI_LAUNCHER_BIN`; they must fail
+rather than guess another profile launcher.
 
-Each profile also gets a generated `APPEND_SYSTEM.md` inside `PI_CODING_AGENT_DIR` to append wrapper-specific response-style instructions without replacing Pi's default system prompt.
+Each profile receives generated `settings.json`, `keybindings.json`,
+`AGENTS.md`, and `APPEND_SYSTEM.md` files on launch.
 
-`settings.json` and `keybindings.json` are generated declaratively and
-overwritten on every launch.
+## Run the neutral package
 
-Example append:
-
-```nix
-pi.appendSystemPrompt = ''
-  # Local rules
-
-  Always mention exact Nix option names when relevant.
-'';
-```
-
-Example override:
-
-```nix
-pi.overrideSystemPrompt = ''
-  # Response style
-
-  Answer in one sentence unless asked otherwise.
-'';
-```
-
-Example splash override:
-
-```nix
-pi.splash = {
-  logoText = ''
-    ██████╗ ██╗
-    ██╔══██╗██║
-    ██████╔╝██║
-    ██╔═══╝ ██║
-    ██║     ██║
-    ╚═╝     ╚═╝
-  '';
-  versionText = null;
-  compactHelpText = "Press {expandKey} for help.";
-  helpText = "Pi profile. Wrapped launcher only.";
-};
+```bash
+nix run .#p
 ```

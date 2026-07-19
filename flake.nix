@@ -1,5 +1,5 @@
 {
-  description = "Declarative Pi coding-agent setup packaged with nix-wrapper-modules";
+  description = "Declarative, configurable Pi coding-agent wrappers";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -16,33 +16,30 @@
       ...
     }@inputs:
     let
-      lib = nixpkgs.lib;
-      systems = lib.systems.flakeExposed;
-      forEachSystem = lib.genAttrs systems;
-      wrapperModule = lib.modules.importApply ./module.nix inputs;
-      personalWrapperModule = {
-        imports = [
-          wrapperModule
-          ./presets/personal.nix
-        ];
-      };
+      nixpkgsLib = nixpkgs.lib;
+      systems = nixpkgsLib.systems.flakeExposed;
+      forEachSystem = nixpkgsLib.genAttrs systems;
+      wrapperModule = nixpkgsLib.modules.importApply ./module.nix inputs;
       wrapper = nix-wrapper-modules.lib.evalModule wrapperModule;
-      personalWrapper = nix-wrapper-modules.lib.evalModule personalWrapperModule;
+      mkProfile = import ./lib/mk-profile.nix {
+        lib = nixpkgsLib;
+        inherit wrapper;
+      };
+      homeManagerModule = nixpkgsLib.modules.importApply ./modules/home-manager.nix inputs;
     in
     {
-      # `pi` is the generic, unopinionated module; `personal` layers
-      # presets/personal.nix on top of it. Every `default` alias points at
-      # `personal` to keep existing consumers of this flake unchanged.
+      lib = {
+        inherit mkProfile;
+      };
+
       wrapperModules = {
         pi = wrapperModule;
-        personal = personalWrapperModule;
-        default = self.wrapperModules.personal;
+        default = self.wrapperModules.pi;
       };
 
       wrappers = {
         pi = wrapper.config;
-        personal = personalWrapper.config;
-        default = self.wrappers.personal;
+        default = self.wrappers.pi;
       };
 
       packages = forEachSystem (
@@ -59,23 +56,12 @@
           pi-fff = pkgs.callPackage ./packages/pi-packages/fff.nix { };
           pi-dynamic-workflows = pkgs.callPackage ./packages/pi-packages/dynamic-workflows.nix { };
           pi-codex-goal = pkgs.callPackage ./packages/pi-packages/codex-goal.nix { };
-          pi-wrapped = self.wrappers.personal.wrap { inherit pkgs; };
-          pi-minimal-wrapped =
-            (self.wrappers.personal.extendModules {
-              modules = [
-                ./profiles/minimal.nix
-                { binName = "p-minimal"; }
-              ];
-            }).config.wrap
-              { inherit pkgs; };
-          p = pkgs.runCommand "pi-wrapped-p-only" { } ''
-            mkdir -p $out/bin
-            ln -s ${pi-wrapped}/bin/p $out/bin/p
-          '';
-          p-minimal = pkgs.runCommand "pi-wrapped-p-minimal-only" { } ''
-            mkdir -p $out/bin
-            ln -s ${pi-minimal-wrapped}/bin/p-minimal $out/bin/p-minimal
-          '';
+          pi-wrapped = self.wrappers.pi.wrap { inherit pkgs; };
+          p = self.lib.mkProfile {
+            inherit pkgs;
+            profileName = "default";
+            binName = "p";
+          };
           default = p;
         }
       );
@@ -85,35 +71,25 @@
           type = "app";
           program = "${self.packages.${system}.p}/bin/p";
         };
-        p-minimal = {
-          type = "app";
-          program = "${self.packages.${system}.p-minimal}/bin/p-minimal";
-        };
         default = p;
       });
 
-      # Both install modules expose their wrapper as `wrappers.pi` in the
-      # target configuration; `default` keeps the personal preset so existing
-      # consumers of this flake keep their behavior.
       nixosModules = {
         pi = nix-wrapper-modules.lib.getInstallModule {
           name = "pi";
           value = wrapperModule;
         };
-        personal = nix-wrapper-modules.lib.getInstallModule {
-          name = "pi";
-          value = personalWrapperModule;
-        };
-        default = self.nixosModules.personal;
+        default = self.nixosModules.pi;
       };
 
       homeModules = {
-        pi = self.nixosModules.pi;
-        personal = self.nixosModules.personal;
-        camofoxBrowser = lib.modules.importApply ./profiles/home-camofox-browser.nix inputs;
-        minimal = lib.modules.importApply ./profiles/home-minimal.nix inputs;
-        default = self.homeModules.personal;
+        pi = homeManagerModule;
+        profiles = homeManagerModule;
+        wrapper = self.nixosModules.pi;
+        default = self.homeModules.pi;
       };
+
+      homeManagerModules = self.homeModules;
 
       devShells = forEachSystem (
         system:
