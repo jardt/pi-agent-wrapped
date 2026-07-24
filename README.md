@@ -177,7 +177,6 @@ images. In a pane with `HERDR_ENV=1`, the shim enables only pi-tui's Kitty image
 capability and preserves all other detected capabilities. It has no effect
 outside Herdr. `terminal.showImages` must still be enabled for images to render.
 
-
 ### Better OpenAI image tool
 
 When `better-openai` is included in `pi.bundledExtensions`, its `/openai-image`
