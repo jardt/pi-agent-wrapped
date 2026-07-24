@@ -170,6 +170,13 @@ All are optional; unset settings are omitted so Pi's own defaults apply.
   `pi.herdrIntegration`, `pi.mattPocockSkills`, `pi.camofoxBrowser`,
   `pi.nixOptions`, `pi.betterOpenAI`, `pi.gondolin`, `pi.cheapModels`, and `pi.librarian`
 
+When `pi.herdrIntegration.enable` is enabled, the wrapper also loads a narrowly
+scoped terminal-capability shim. Herdr forwards Kitty graphics sequences while
+presenting child PTYs as `TERM=xterm-256color`, which makes pi-tui disable inline
+images. In a pane with `HERDR_ENV=1`, the shim enables only pi-tui's Kitty image
+capability and preserves all other detected capabilities. It has no effect
+outside Herdr. `terminal.showImages` must still be enabled for images to render.
+
 
 ### Better OpenAI image tool
 

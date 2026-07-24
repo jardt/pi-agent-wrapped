@@ -36,6 +36,7 @@ let
     "clanker-working-messages"
     "context"
     "explore"
+    "herdr-terminal-images"
     "host-statusline"
     "librarian"
     "multi-edit"
@@ -138,7 +139,10 @@ let
       "${piResources}/share/pi-resources/extensions/nix-options.ts"
     ]
     ++ resourcePackageResources "extensions"
-    ++ lib.optionals config.pi.herdrIntegration.enable [ herdrPiExtension ];
+    ++ lib.optionals config.pi.herdrIntegration.enable [
+      herdrPiExtension
+      (bundledExtensionPath "herdr-terminal-images")
+    ];
   herdrPiExtension = "${config.pi.herdrIntegration.source}/src/integration/assets/pi/herdr-agent-state.ts";
   mattPocockResourcePackage = lib.optional config.pi.mattPocockSkills.enable {
     package = mattPocockSkillsPackage;
